@@ -1,4 +1,4 @@
-package com.example.application.examplefeature;
+package com.example.application.gliders;
 
 import org.jspecify.annotations.Nullable;
 import org.springframework.data.domain.Pageable;
@@ -10,24 +10,24 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Service
-public class TaskService {
+public class GliderService {
 
-    private final TaskRepository taskRepository;
+    private final GliderRepository gliderRepository;
 
-    TaskService(TaskRepository taskRepository) {
-        this.taskRepository = taskRepository;
+    GliderService(GliderRepository gliderRepository) {
+        this.gliderRepository = gliderRepository;
     }
 
     @Transactional
     public void createTask(String description, @Nullable LocalDate dueDate) {
-        var task = new Task(description, Instant.now());
+        var task = new Glider(description, Instant.now());
         task.setDueDate(dueDate);
-        taskRepository.saveAndFlush(task);
+        gliderRepository.saveAndFlush(task);
     }
 
     @Transactional(readOnly = true)
-    public List<Task> list(Pageable pageable) {
-        return taskRepository.findAllBy(pageable).toList();
+    public List<Glider> list(Pageable pageable) {
+        return gliderRepository.findAllBy(pageable).toList();
     }
 
 }

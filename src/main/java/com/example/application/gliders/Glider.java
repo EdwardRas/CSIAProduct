@@ -1,4 +1,4 @@
-package com.example.application.examplefeature;
+package com.example.application.gliders;
 
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 @Entity
 @Table(name = "task")
-public class Task {
+public class Glider {
 
     public static final int DESCRIPTION_MAX_LENGTH = 300;
 
@@ -27,10 +27,10 @@ public class Task {
     @Nullable
     private LocalDate dueDate;
 
-    protected Task() { // To keep Hibernate happy
+    protected Glider() { // To keep Hibernate happy
     }
 
-    public Task(String description, Instant creationDate) {
+    public Glider(String description, Instant creationDate) {
         setDescription(description);
         this.creationDate = creationDate;
     }
@@ -71,7 +71,7 @@ public class Task {
             return true;
         }
 
-        Task other = (Task) obj;
+        Glider other = (Glider) obj;
         return getId() != null && getId().equals(other.getId());
     }
 
