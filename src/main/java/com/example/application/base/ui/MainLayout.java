@@ -22,7 +22,7 @@ public final class MainLayout extends AppLayout {
 
     MainLayout() {
         setPrimarySection(Section.DRAWER);
-        addToNavbar (new H1("Navbar"));
+//        addToNavbar (new H1("Navbar"));
         addToDrawer(createHeader(), new Scroller(createTopNav()));
     }
 

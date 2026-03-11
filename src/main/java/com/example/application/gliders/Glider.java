@@ -7,20 +7,20 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "task")
+@Table(name = "gliders")
 public class Glider {
 
     public static final int DESCRIPTION_MAX_LENGTH = 300;
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @Column(name = "task_id")
+    @Column(name = "glider_id")
     private Long id;
 
-    @Column(name = "description", nullable = false, length = DESCRIPTION_MAX_LENGTH)
+    @Column(name = "registrationNumber", nullable = false, length = DESCRIPTION_MAX_LENGTH)
     private String description = "";
 
-    @Column(name = "creation_date", nullable = false)
+    @Column(name = "creatio n_date", nullable = false)
     private Instant creationDate;
 
     @Column(name = "due_date")
