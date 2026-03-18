@@ -2,7 +2,7 @@ package com.example.application.base.ui;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.applayout.AppLayout;
-import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -22,8 +22,8 @@ public final class MainLayout extends AppLayout {
 
     MainLayout() {
         setPrimarySection(Section.DRAWER);
-//        addToNavbar (new H1("Navbar"));
-        addToDrawer(createHeader(), new Scroller(createTopNav()));
+        addToNavbar(new Button("Gliders", e -> GlidersView.showView()));
+//        addToDrawer(createHeader(), new Scroller(createTopNav()));
     }
 
     private Component createHeader() {
