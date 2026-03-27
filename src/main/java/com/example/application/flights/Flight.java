@@ -1,5 +1,7 @@
-package com.example.application.Flights;
+package com.example.application.flights;
 
+import com.example.application.gliders.Glider;
+import com.example.application.pilots.Pilot;
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
 
@@ -14,14 +16,18 @@ public class Flight {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @Column(name = "task_id")
-    private Long id;
+
+    private int id;
+    private Glider glider;
 
     @Column(name = "description", nullable = false, length = DESCRIPTION_MAX_LENGTH)
     private String description = "";
 
-    @Column(name = "creation_date", nullable = false)
-    private Instant creationDate;
+    @Column(name = "departureTime", nullable = false)
+    private Instant departureTime;
+
+    @Column(name = "pilot1", nullable = false)
+    private Pilot pilot1;
 
     @Column(name = "due_date")
     @Nullable
@@ -30,12 +36,18 @@ public class Flight {
     protected Flight() { // To keep Hibernate happy
     }
 
-    public Flight(String description, Instant creationDate) {
+    public Flight(String description, Instant departureTime) {
         setDescription(description);
-        this.creationDate = creationDate;
+        this.departureTime = departureTime;
     }
 
-    public @Nullable Long getId() {
+    public Flight(int id, Glider glider, Pilot pilot1) {
+        this.id = id;
+        this.glider = glider;
+        this.pilot1 = pilot1;
+    }
+
+    public @Nullable int getId() {
         return id;
     }
 
@@ -50,8 +62,8 @@ public class Flight {
         this.description = description;
     }
 
-    public Instant getCreationDate() {
-        return creationDate;
+    public Instant getDepartureTime() {
+        return departureTime;
     }
 
     public @Nullable LocalDate getDueDate() {
@@ -72,7 +84,7 @@ public class Flight {
         }
 
         Flight other = (Flight) obj;
-        return getId() != null && getId().equals(other.getId());
+        return getId() == other.getId();
     }
 
     @Override

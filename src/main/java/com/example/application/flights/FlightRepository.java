@@ -1,4 +1,4 @@
-package com.example.application.Flights;
+package com.example.application.flights;
 
 import com.example.application.gliders.Glider;
 import org.springframework.data.domain.Pageable;

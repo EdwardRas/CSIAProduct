@@ -27,7 +27,7 @@ class FlightServiceTest {
         gliderService.createTask(desc, due);
 
         var task = gliderService.list(PageRequest.ofSize(1)).get(0);
-        assertThat(task.getDescription().equals(desc));
+        assertThat(task.getRegistrationNumber().equals(desc));
         assertThat(task.getDueDate().equals(due));
         assertThat(task.getCreationDate().isAfter(now));
     }

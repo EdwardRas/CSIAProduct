@@ -18,16 +18,16 @@ public class GliderService {
         this.gliderRepository = gliderRepository;
     }
 
-    @Transactional
-    public void createTask(String description, @Nullable LocalDate dueDate) {
-        var task = new Glider(description, Instant.now());
-        task.setDueDate(dueDate);
-        gliderRepository.saveAndFlush(task);
-    }
+//    @Transactional
+//    public void createTask(String description, @Nullable LocalDate dueDate) {
+//        var task = new Glider(description, Instant.now());
+//        task.setDueDate(dueDate);
+//        gliderRepository.saveAndFlush(task);
+//    }
 
-    @Transactional(readOnly = true)
-    public List<Glider> list(Pageable pageable) {
-        return gliderRepository.findAllBy(pageable).toList();
-    }
+//    @Transactional(readOnly = true)
+//    public List<Glider> list(Pageable pageable) {
+//        return gliderRepository.findAllBy(pageable).toList();
+//    }
 
 }

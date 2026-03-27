@@ -1,10 +1,14 @@
 package com.example.application.gliders;
 
+import com.vaadin.copilot.shaded.checkerframework.checker.units.qual.C;
 import jakarta.persistence.*;
 import org.jspecify.annotations.Nullable;
 
+import javax.xml.crypto.Data;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Date;
 
 @Entity
 @Table(name = "gliders")
@@ -14,53 +18,87 @@ public class Glider {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @Column(name = "glider_id")
-    private Long id;
+    private static int tempNextID;
+    private int id;
+    public boolean isFlying;
 
     @Column(name = "registrationNumber", nullable = false, length = DESCRIPTION_MAX_LENGTH)
-    private String description = "";
+    private String registrationNumber = "";
 
-    @Column(name = "creatio n_date", nullable = false)
-    private Instant creationDate;
+    @Column(name = "totalFlightTime", nullable = false)
+    private Duration totalFlightTime;
 
-    @Column(name = "due_date")
-    @Nullable
-    private LocalDate dueDate;
+    @Column(name = "numberOfFlights", nullable = false)
+    private int flightNum;
+
+    @Column(name = "type")
+    private String type;
+
+    @Column(name = "nextCheckupHrs")
+    private Duration nextCheckupHrs;
+
+    @Column(name = "nextCheckupFlights")
+    private int nextCheckupFlights;
+
+    @Column(name = "nextCheckupDate")
+    private Date nextCheckupDate;
+
+//    @Column(name = "creation_date", nullable = false)
+//    private Instant creationDate;
+//
+//    @Column(name = "due_date")
+//    @Nullable
+//    private LocalDate dueDate;
 
     protected Glider() { // To keep Hibernate happy
     }
 
-    public Glider(String description, Instant creationDate) {
-        setDescription(description);
-        this.creationDate = creationDate;
+    public Glider(String registrationNumber/*, Instant creationDate*/) {
+        setRegistrationNumber(registrationNumber);
+//        this.creationDate = creationDate;
+        setId(tempNextID);
+        setTempNextID(tempNextID + 1);
+
     }
 
-    public @Nullable Long getId() {
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public static int getTempNextID() {
+        return tempNextID;
+    }
+
+    public static void setTempNextID(int tempNextID) {
+        Glider.tempNextID = tempNextID;
+    }
+
+    public @Nullable int getId() {
         return id;
     }
 
-    public String getDescription() {
-        return description;
+    public String getRegistrationNumber() {
+        return registrationNumber;
     }
 
-    public void setDescription(String description) {
-        if (description.length() > DESCRIPTION_MAX_LENGTH) {
+    public void setRegistrationNumber(String registrationNumber) {
+        if (registrationNumber.length() > DESCRIPTION_MAX_LENGTH) {
             throw new IllegalArgumentException("Description length exceeds " + DESCRIPTION_MAX_LENGTH);
         }
-        this.description = description;
+        this.registrationNumber = registrationNumber;
     }
 
-    public Instant getCreationDate() {
-        return creationDate;
-    }
+//    public Instant getCreationDate() {
+//        return creationDate;
+//    }
 
-    public @Nullable LocalDate getDueDate() {
-        return dueDate;
-    }
+//    public @Nullable LocalDate getDueDate() {
+//        return dueDate;
+//    }
 
-    public void setDueDate(@Nullable LocalDate dueDate) {
-        this.dueDate = dueDate;
-    }
+//    public void setDueDate(@Nullable LocalDate dueDate) {
+//        this.dueDate = dueDate;
+//    }
 
     @Override
     public boolean equals(Object obj) {
@@ -72,7 +110,7 @@ public class Glider {
         }
 
         Glider other = (Glider) obj;
-        return getId() != null && getId().equals(other.getId());
+        return getId() != other.getId();
     }
 
     @Override
