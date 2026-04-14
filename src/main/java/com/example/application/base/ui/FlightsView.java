@@ -1,5 +1,6 @@
 package com.example.application.base.ui;
 import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
@@ -7,9 +8,12 @@ import com.vaadin.flow.router.Route;
 public class FlightsView extends VerticalLayout {
 
     FlightsView() {
-        add();
+        add(new Button("Gliders", e -> FlightsView.showView()));
     }
     public static void showView() {
+        UI.getCurrent().navigate(FlightsView.class);
+    }
+    public static void showViewFilter() {
         UI.getCurrent().navigate(FlightsView.class);
     }
 }

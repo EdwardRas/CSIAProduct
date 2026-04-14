@@ -6,60 +6,32 @@ import org.jspecify.annotations.Nullable;
 import java.time.Instant;
 import java.time.LocalDate;
 
-@Entity
-@Table(name = "gliders")
+
 public class Glider {
 
-    public static final int DESCRIPTION_MAX_LENGTH = 300;
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    @Column(name = "glider_id")
     private Long id;
 
-    @Column(name = "registrationNumber", nullable = false, length = DESCRIPTION_MAX_LENGTH)
-    private String description = "";
+    private String registrationNumber = "";
 
-    @Column(name = "creatio n_date", nullable = false)
-    private Instant creationDate;
 
-    @Column(name = "due_date")
-    @Nullable
-    private LocalDate dueDate;
-
-    protected Glider() { // To keep Hibernate happy
+    public Glider() {
     }
 
-    public Glider(String description, Instant creationDate) {
-        setDescription(description);
-        this.creationDate = creationDate;
-    }
-
-    public @Nullable Long getId() {
+    public Long getId() {
         return id;
     }
 
-    public String getDescription() {
-        return description;
+    public String getRegistrationNumber() {
+        return registrationNumber;
     }
 
-    public void setDescription(String description) {
-        if (description.length() > DESCRIPTION_MAX_LENGTH) {
-            throw new IllegalArgumentException("Description length exceeds " + DESCRIPTION_MAX_LENGTH);
-        }
-        this.description = description;
+    public void setRegistrationNumber(String registrationNumber) {
+        this.registrationNumber = registrationNumber;
     }
 
-    public Instant getCreationDate() {
-        return creationDate;
-    }
 
-    public @Nullable LocalDate getDueDate() {
-        return dueDate;
-    }
-
-    public void setDueDate(@Nullable LocalDate dueDate) {
-        this.dueDate = dueDate;
+    public void setId(Long id) {
+        this.id = id;
     }
 
     @Override
