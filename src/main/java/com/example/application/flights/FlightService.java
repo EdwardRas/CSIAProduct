@@ -1,14 +1,6 @@
-package com.example.application.Flights;
+package com.example.application.flights;
 
-import com.example.application.gliders.Glider;
-import org.jspecify.annotations.Nullable;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.List;
 
 @Service
 public class FlightService {

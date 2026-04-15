@@ -22,7 +22,7 @@ public final class MainLayout extends AppLayout {
 
     MainLayout() {
         setPrimarySection(Section.DRAWER);
-        addToNavbar(new Button("Gliders", e -> GlidersView.showView()));
+        //addToNavbar(new Button("Gliders", e -> GlidersView.showView()));
 //        addToDrawer(createHeader(), new Scroller(createTopNav()));
     }
 

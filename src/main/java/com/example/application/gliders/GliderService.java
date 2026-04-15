@@ -1,17 +1,11 @@
 package com.example.application.gliders;
 
-import org.jspecify.annotations.Nullable;
+import org.postgresql.util.PGInterval;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import java.time.Instant;
-import java.time.LocalDate;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,24 +34,47 @@ public class GliderService {
 //    public List<Glider> list(Pageable pageable) {
 //        return gliderRepository.findAllBy(pageable).toList();
 //    }
-public List<Glider> getAllGliders(){
-    List<Glider> gliders = new ArrayList<>();
-    try(
-            Connection conn = dataSource.getConnection();
-            Statement st = conn.createStatement();
-            ResultSet rs = st.executeQuery("SELECT * FROM gliders");
-    ){
-        while(rs.next()){
-            Glider glider = new Glider();
-            glider.setId(rs.getLong("id"));
-            glider.setRegistrationNumber(rs.getString("reg_number"));
-            //etc.
-            gliders.add(glider);
+    public List<Glider> getAllGliders(){
+        List<Glider> gliders = new ArrayList<>();
+        try(
+                Connection conn = dataSource.getConnection();
+                Statement st = conn.createStatement();
+                ResultSet rs = st.executeQuery("SELECT * FROM gliders");
+        ){
+            while(rs.next()){
+                Glider glider = new Glider();
+                glider.setId(rs.getLong("id"));
+                glider.setRegistrationNumber(rs.getString("reg_number"));
+                glider.setTotalFlightTime((org.postgresql.util.PGInterval)rs.getObject("total_flight_time"));
+                glider.setFlightCount(rs.getInt("flight_count"));
+                glider.setType(rs.getString("type"));
+                glider.setNextCheckupHrs((org.postgresql.util.PGInterval)rs.getObject("next_checkup_hrs") );
+                glider.setNextCheckupFlights(rs.getInt("next_checkup_flights"));
+                glider.setNextCheckupDate(rs.getDate("next_checkup_deadline"));
+                gliders.add(glider);
+            }
+        }
+        catch(Exception e){
+            System.out.println("Exception: " + e.getMessage());
+        }
+        return gliders;
+    }
+
+    public void addGlider(String regNum, PGInterval totalFlightTime, int flightCount, String type, PGInterval nextCheckupHrs, int nextCheckupFlights, Date nextCheckupDate){
+        String sql = "INSERT INTO gliders (reg_number, total_flight_time, flight_count, type, next_checkup_hrs, next_checkup_flights, next_checkup_deadline) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try(Connection conn = dataSource.getConnection()){
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, regNum);
+            ps.setObject(2,totalFlightTime);
+            ps.setInt(3,flightCount);
+            ps.setString(4,type);
+            ps.setObject(5,nextCheckupHrs);
+            ps.setInt(6,nextCheckupFlights);
+            ps.setDate(7,nextCheckupDate);
+            ps.executeUpdate();
+        }
+        catch (Exception e){
+            System.out.println("Exception: " + e.getMessage());
         }
     }
-    catch(Exception e){
-        System.out.println("Exception: " + e.getMessage());
-    }
-    return gliders;
-}
 }

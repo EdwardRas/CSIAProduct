@@ -1,10 +1,4 @@
-package com.example.application.Flights;
-
-import jakarta.persistence.*;
-import org.jspecify.annotations.Nullable;
-
-import java.time.Instant;
-import java.time.LocalDate;
+package com.example.application.flights;
 
 public class Flight {
 
