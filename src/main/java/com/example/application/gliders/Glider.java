@@ -18,7 +18,7 @@ public class Glider {
 
     private PGInterval nextCheckupHrs;
 
-    private int nextCheckupFlights;
+    private Integer nextCheckupFlights;
 
     private Date nextCheckupDate;
 
@@ -63,11 +63,11 @@ public class Glider {
         this.nextCheckupHrs = nextCheckupHrs;
     }
 
-    public int getNextCheckupFlights() {
+    public Integer getNextCheckupFlights() {
         return nextCheckupFlights;
     }
 
-    public void setNextCheckupFlights(int nextCheckupFlights) {
+    public void setNextCheckupFlights(Integer nextCheckupFlights) {
         this.nextCheckupFlights = nextCheckupFlights;
     }
 

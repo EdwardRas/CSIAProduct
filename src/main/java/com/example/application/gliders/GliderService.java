@@ -49,7 +49,7 @@ public class GliderService {
                 glider.setFlightCount(rs.getInt("flight_count"));
                 glider.setType(rs.getString("type"));
                 glider.setNextCheckupHrs((org.postgresql.util.PGInterval)rs.getObject("next_checkup_hrs") );
-                glider.setNextCheckupFlights(rs.getInt("next_checkup_flights"));
+                glider.setNextCheckupFlights((Integer)rs.getObject("next_checkup_flights"));
                 glider.setNextCheckupDate(rs.getDate("next_checkup_deadline"));
                 gliders.add(glider);
             }
@@ -60,18 +60,18 @@ public class GliderService {
         return gliders;
     }
 
-    public void addGlider(String regNum, PGInterval totalFlightTime, int flightCount, String type, PGInterval nextCheckupHrs, int nextCheckupFlights, Date nextCheckupDate){
+    public void addGlider(String regNum, PGInterval totalFlightTime, int flightCount, String type, PGInterval nextCheckupHrs, Integer nextCheckupFlights, Date nextCheckupDate){
         String sql = "INSERT INTO gliders (reg_number, total_flight_time, flight_count, type, next_checkup_hrs, next_checkup_flights, next_checkup_deadline) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try(Connection conn = dataSource.getConnection()){
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1, regNum);
-            ps.setObject(2,totalFlightTime);
-            ps.setInt(3,flightCount);
-            ps.setString(4,type);
-            ps.setObject(5,nextCheckupHrs);
-            ps.setInt(6,nextCheckupFlights);
-            ps.setDate(7,nextCheckupDate);
-            ps.executeUpdate();
+            ps.setObject(2, totalFlightTime);
+            ps.setInt(3, flightCount);
+            ps.setString(4, type);
+            ps.setObject(5, nextCheckupHrs);
+            ps.setObject(6, nextCheckupFlights, java.sql.Types.INTEGER);
+            ps.setDate(7, nextCheckupDate);
+            ps.execute();
         }
         catch (Exception e){
             System.out.println("Exception: " + e.getMessage());
