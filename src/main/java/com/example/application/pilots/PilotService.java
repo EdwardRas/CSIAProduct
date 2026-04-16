@@ -1,4 +1,4 @@
 package com.example.application.pilots;
 
-public class Pilot {
+public class PilotService {
 }

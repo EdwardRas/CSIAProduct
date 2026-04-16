@@ -49,10 +49,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.h2database</groupId>-->
+<!--            <artifactId>h2</artifactId>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -84,47 +84,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.jooq</groupId>
-                <artifactId>jooq-codegen-maven</artifactId>
-                <version>${jooq.version}</version>
-                <executions>
-                    <execution>
-                        <id>jooq-codegen</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <generator>
-                        <database>
-                            <name>org.jooq.meta.extensions.ddl.DDLDatabase</name>
-                            <properties>
-                                <property>
-                                    <key>scripts</key>
-                                    <value>src/main/resources/db/migration/*.sql</value>
-                                </property>
-                                <property>
-                                    <key>sort</key>
-                                    <value>flyway</value>
-                                </property>
-                            </properties>
-                        </database>
-                        <target>
-                            <packageName>com.example.application.jooq</packageName>
-                        </target>
-                    </generator>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.jooq</groupId>
-                        <artifactId>jooq-meta-extensions</artifactId>
-                        <version>${jooq.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
+
         </plugins>
     </build>
     

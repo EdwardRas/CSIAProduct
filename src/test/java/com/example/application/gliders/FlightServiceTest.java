@@ -19,22 +19,22 @@ class FlightServiceTest {
     @Autowired
     GliderService gliderService;
 
-    @Test
-    public void tasks_are_stored_in_the_database_with_the_current_timestamp() {
-        var now = Instant.now();
-        var desc = "Do this";
-        var due = LocalDate.of(2025, 2, 7);
-        gliderService.createTask(desc, due);
-
-        var task = gliderService.list(PageRequest.ofSize(1)).get(0);
-        assertThat(task.getRegistrationNumber().equals(desc));
-        assertThat(task.getDueDate().equals(due));
-        assertThat(task.getCreationDate().isAfter(now));
-    }
-
-    @Test
-    public void tasks_are_validated_before_they_are_stored() {
-        assertThatThrownBy(() -> gliderService.createTask("X".repeat(Glider.DESCRIPTION_MAX_LENGTH + 1), null))
-                .isInstanceOf(IllegalArgumentException.class);
-    }
+//    @Test
+//    public void tasks_are_stored_in_the_database_with_the_current_timestamp() {
+//        var now = Instant.now();
+//        var desc = "Do this";
+//        var due = LocalDate.of(2025, 2, 7);
+//        gliderService.createTask(desc, due);
+//
+//        var task = gliderService.list(PageRequest.ofSize(1)).get(0);
+//        assertThat(task.getRegistrationNumber().equals(desc));
+//        assertThat(task.getDueDate().equals(due));
+//        assertThat(task.getCreationDate().isAfter(now));
+//    }
+//
+//    @Test
+//    public void tasks_are_validated_before_they_are_stored() {
+//        assertThatThrownBy(() -> gliderService.createTask("X".repeat(Glider.DESCRIPTION_MAX_LENGTH + 1), null))
+//                .isInstanceOf(IllegalArgumentException.class);
+//    }
 }

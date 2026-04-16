@@ -1,79 +1,33 @@
 package com.example.application.gliders;
 
-import com.vaadin.copilot.shaded.checkerframework.checker.units.qual.C;
-import jakarta.persistence.*;
-import org.jspecify.annotations.Nullable;
+import org.postgresql.util.PGInterval;
 
-import javax.xml.crypto.Data;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.Date;
+import java.sql.Date;
 
-@Entity
-@Table(name = "gliders")
 public class Glider {
 
-    public static final int DESCRIPTION_MAX_LENGTH = 300;
+    private Long id;
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
-    private static int tempNextID;
-    private int id;
-    public boolean isFlying;
+    private String registrationNumber;
 
-    @Column(name = "registrationNumber", nullable = false, length = DESCRIPTION_MAX_LENGTH)
-    private String registrationNumber = "";
+    private PGInterval totalFlightTime;
 
-    @Column(name = "totalFlightTime", nullable = false)
-    private Duration totalFlightTime;
+    private int flightCount;
 
-    @Column(name = "numberOfFlights", nullable = false)
-    private int flightNum;
-
-    @Column(name = "type")
     private String type;
 
-    @Column(name = "nextCheckupHrs")
-    private Duration nextCheckupHrs;
+    private PGInterval nextCheckupHrs;
 
-    @Column(name = "nextCheckupFlights")
-    private int nextCheckupFlights;
+    private Integer nextCheckupFlights;
 
-    @Column(name = "nextCheckupDate")
     private Date nextCheckupDate;
 
-//    @Column(name = "creation_date", nullable = false)
-//    private Instant creationDate;
-//
-//    @Column(name = "due_date")
-//    @Nullable
-//    private LocalDate dueDate;
+    public boolean isFlying;
 
-    protected Glider() { // To keep Hibernate happy
+    public Glider() {
     }
 
-    public Glider(String registrationNumber/*, Instant creationDate*/) {
-        setRegistrationNumber(registrationNumber);
-//        this.creationDate = creationDate;
-        setId(tempNextID);
-        setTempNextID(tempNextID + 1);
-
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public static int getTempNextID() {
-        return tempNextID;
-    }
-
-    public static void setTempNextID(int tempNextID) {
-        Glider.tempNextID = tempNextID;
-    }
-
-    public @Nullable int getId() {
+    public Long getId() {
         return id;
     }
 
@@ -82,23 +36,60 @@ public class Glider {
     }
 
     public void setRegistrationNumber(String registrationNumber) {
-        if (registrationNumber.length() > DESCRIPTION_MAX_LENGTH) {
-            throw new IllegalArgumentException("Description length exceeds " + DESCRIPTION_MAX_LENGTH);
-        }
         this.registrationNumber = registrationNumber;
     }
 
-//    public Instant getCreationDate() {
-//        return creationDate;
-//    }
+    public PGInterval getTotalFlightTime() {
+        return totalFlightTime;
+    }
 
-//    public @Nullable LocalDate getDueDate() {
-//        return dueDate;
-//    }
+    public void setTotalFlightTime(PGInterval totalFlightTime) {
+        this.totalFlightTime = totalFlightTime;
+    }
 
-//    public void setDueDate(@Nullable LocalDate dueDate) {
-//        this.dueDate = dueDate;
-//    }
+    public int getFlightCount() {
+        return flightCount;
+    }
+
+    public void setFlightCount(int flightCount) {
+        this.flightCount = flightCount;
+    }
+
+    public PGInterval getNextCheckupHrs() {
+        return nextCheckupHrs;
+    }
+
+    public void setNextCheckupHrs(PGInterval nextCheckupHrs) {
+        this.nextCheckupHrs = nextCheckupHrs;
+    }
+
+    public Integer getNextCheckupFlights() {
+        return nextCheckupFlights;
+    }
+
+    public void setNextCheckupFlights(Integer nextCheckupFlights) {
+        this.nextCheckupFlights = nextCheckupFlights;
+    }
+
+    public Date getNextCheckupDate() {
+        return nextCheckupDate;
+    }
+
+    public void setNextCheckupDate(Date nextCheckupDate) {
+        this.nextCheckupDate = nextCheckupDate;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -110,7 +101,7 @@ public class Glider {
         }
 
         Glider other = (Glider) obj;
-        return getId() != other.getId();
+        return getId() != null && getId().equals(other.getId());
     }
 
     @Override

@@ -10,6 +10,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.page.AppShellConfigurator;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Properties;
+
+import java.sql.*;
+import java.util.Arrays;
+import java.util.Properties;
+
 @SpringBootApplication
 @StyleSheet(Lumo.STYLESHEET) // Use Aura.STYLESHEET to use Aura instead
 @StyleSheet(Lumo.UTILITY_STYLESHEET)
@@ -22,5 +32,4 @@ public class Application implements AppShellConfigurator {
         Flight testFlight = new Flight(1, testGlider, testPilot);
         SpringApplication.run(Application.class, args);
     }
-
 }

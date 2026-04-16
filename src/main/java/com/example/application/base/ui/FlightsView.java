@@ -6,11 +6,14 @@ import com.vaadin.flow.router.Route;
 
 @Route("building-apps/navigate/flights")
 public class FlightsView extends VerticalLayout {
-    private int gliderId;
+
     FlightsView() {
-        add(new Button("Flight", e -> GlidersView.showView()));
+        add(new Button("Gliders", e -> GlidersView.showView()));
     }
     public static void showView() {
+        UI.getCurrent().navigate(FlightsView.class);
+    }
+    public static void showViewFilter() {
         UI.getCurrent().navigate(FlightsView.class);
     }
 }
