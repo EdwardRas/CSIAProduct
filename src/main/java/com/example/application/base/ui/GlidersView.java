@@ -62,7 +62,13 @@ public class GlidersView extends VerticalLayout {
         TextField searchField = new TextField();
         searchField.setWidth("250px");
         searchField.setLabel("Search:");
-        Button addButton = new Button("Add Glider", e -> showAdditionForm(gliderService));
+        Button addButton = new Button("Add Glider", e -> {
+            try {
+                showAdditionForm(gliderService);
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
         searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
         searchField.setValueChangeMode(ValueChangeMode.EAGER);
         searchField.addValueChangeListener(e -> dataView.refreshAll());
@@ -84,7 +90,7 @@ public class GlidersView extends VerticalLayout {
         buttonsLayout.add(searchField, addButton);
         add(buttonsLayout, grid);
     }
-    private void showAdditionForm(GliderService gliderService){
+    private void showAdditionForm(GliderService gliderService) throws SQLException {
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -155,10 +161,25 @@ public class GlidersView extends VerticalLayout {
                 return;
             }*/
             String regNum = regNumField.getValue();
-            PGInterval totalFlightTime = new PGInterval(0, 0, 0, totalFlightTimeHrsField.getValue(), totalFlightTimeMinsField.getValue(), 0);
+            PGInterval totalFlightTime = null;
+            try {
+                totalFlightTime = new PGInterval(totalFlightTimeHrsField.getValue()+":"+totalFlightTimeMinsField.getValue());
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
             Integer flightCount = flightCountField.getValue();
             String type = typeField.getValue();
-            PGInterval nextCheckupHrs = new PGInterval(0, 0, 0, nextCheckupHrsHrsField.getValue(), nextCheckupHrsMinsField.getValue(), 0);
+            PGInterval nextCheckupHrs;
+            if(nextCheckupHrsMinsField.getValue() != null && nextCheckupHrsHrsField.getValue()!=null) {
+                try {
+                    nextCheckupHrs = new PGInterval(nextCheckupHrsHrsField.getValue() + ":" + nextCheckupHrsMinsField.getValue());
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+            else {
+                nextCheckupHrs = null;
+            }
             Integer nextCheckupFlights = nextCheckupFlightsField.getValue();
             Date nextCheckupDate = null;
             if(nextCheckupDateField.getValue() != null) {
