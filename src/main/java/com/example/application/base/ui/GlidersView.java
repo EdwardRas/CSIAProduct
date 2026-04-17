@@ -23,7 +23,6 @@ import org.postgresql.util.PGInterval;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.sql.*;
-import java.time.LocalDate;
 import java.util.List;
 
 //@Route("building-apps/navigate/gliders")
@@ -61,7 +60,6 @@ public class GlidersView extends VerticalLayout {
                 .addColumn(Glider::getNextCheckupDate)
                 .setHeader("Next Checkup Deadline").setResizable(true)
                 .setSortable(true);
-
         GridListDataView<Glider> dataView = grid.setItems(records);
         TextField searchField = new TextField();
         searchField.setWidth("250px");
@@ -73,7 +71,26 @@ public class GlidersView extends VerticalLayout {
                 throw new RuntimeException(ex);
             }
         });
+        Span status = new Span();
+        status.setVisible(false);
 
+        ConfirmDialog dialog = new ConfirmDialog();
+        dialog.setHeader("Delete \"Report Q4\"?");
+        dialog.setText(
+                "Are you sure you want to permanently delete this item?");
+
+        dialog.setCancelable(true);
+        dialog.addCancelListener(event -> System.out.println("Cancel"));
+
+        dialog.setConfirmText("Delete");
+        dialog.setConfirmButtonTheme("error primary");
+        dialog.addConfirmListener(event -> System.out.println("Delete"));
+
+        Button testDialogButton = new Button("Open confirm dialog");
+        testDialogButton.addClickListener(event -> {
+            dialog.open();
+            status.setVisible(false);
+        });
         GridSingleSelectionModel<Glider> selectionModel = (GridSingleSelectionModel<Glider>)grid.getSelectionModel();
         Button deleteButton = new Button("Delete Glider", e -> {
                 Long deletingId;
@@ -81,18 +98,18 @@ public class GlidersView extends VerticalLayout {
                     deletingId = selectionModel.getSelectedItem().get().getId();
                     if (deletingId >= 0) {
                         //Dialog not working, deletion works
-                        ConfirmDialog dialog = new ConfirmDialog();
-                        dialog.setHeader("Delete \"Glider\"?");
-                        dialog.setText(
+                        ConfirmDialog deleteDialog = new ConfirmDialog();
+                        deleteDialog.setHeader("Delete Glider?");
+                        deleteDialog.setText(
                                 "Are you sure you want to permanently delete this item?");
 
-                        dialog.setCancelable(true);
-                        dialog.addCancelListener(event -> dialog.close());
+                        deleteDialog.setCancelable(true);
+                        //deleteDialog.addCancelListener(event -> deleteDialog.close());
 
-                        dialog.setConfirmText("Delete");
-                        dialog.setConfirmButtonTheme("error primary");
-                        dialog.addConfirmListener(event -> gliderService.deleteGlider(deletingId));
-                        dialog.open();
+                        deleteDialog.setConfirmText("Delete");
+                        deleteDialog.setConfirmButtonTheme("error primary");
+                        deleteDialog.addConfirmListener(event -> gliderService.deleteGlider(deletingId));
+                        deleteDialog.open();
                     }
                 }
                 UI.getCurrent().getPage().reload();
@@ -146,7 +163,7 @@ public class GlidersView extends VerticalLayout {
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
         buttonsLayout.add(new Button("Flights", e -> FlightsView.showView()));
-        buttonsLayout.add(searchField, addButton, deleteButton, editButton);
+        buttonsLayout.add(searchField, addButton, deleteButton, editButton, testDialogButton);
         add(buttonsLayout, grid);
     }
     private void showAdditionForm(GliderService gliderService) throws SQLException {
@@ -337,7 +354,6 @@ public class GlidersView extends VerticalLayout {
         editForm.getFooter().add(cancelButton, editButton);
         editForm.add(formLayout);
         editForm.open();
-
     }
     public static void showView() {
         UI.getCurrent().navigate(GlidersView.class);

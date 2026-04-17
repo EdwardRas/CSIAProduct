@@ -27,9 +27,6 @@ import java.util.Properties;
 public class Application implements AppShellConfigurator {
 
     public static void main(String[] args) {
-         Glider testGlider = new Glider("SP1234");
-        Pilot testPilot = new Pilot(1, "Adam");
-        Flight testFlight = new Flight(1, testGlider, testPilot);
         SpringApplication.run(Application.class, args);
     }
 }

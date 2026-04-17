@@ -18,24 +18,7 @@ public class GliderService {
         this.dataSource = dataSource;
     }
 
-    //
-//    private final GliderRepository gliderRepository;
-//
-//    GliderService(GliderRepository gliderRepository) {
-//        this.gliderRepository = gliderRepository;
-//    }
-//
-//    @Transactional
-//    public void createTask(String description, @Nullable LocalDate dueDate) {
-//        var task = new Glider(description, Instant.now());
-//        task.setDueDate(dueDate);
-//        gliderRepository.saveAndFlush(task);
-//    }
-//
-//    @Transactional(readOnly = true)
-//    public List<Glider> list(Pageable pageable) {
-//        return gliderRepository.findAllBy(pageable).toList();
-//    }
+
     public List<Glider> getAllGliders() {
         List<Glider> gliders = new ArrayList<>();
         try (
