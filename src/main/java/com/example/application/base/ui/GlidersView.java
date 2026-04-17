@@ -3,6 +3,7 @@ import com.example.application.gliders.Glider;
 import com.example.application.gliders.GliderService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
@@ -79,7 +80,19 @@ public class GlidersView extends VerticalLayout {
                 if (selectionModel.getSelectedItem().isPresent()) {
                     deletingId = selectionModel.getSelectedItem().get().getId();
                     if (deletingId >= 0) {
-                        gliderService.deleteGlider(deletingId);
+                        //Dialog not working, deletion works
+                        ConfirmDialog dialog = new ConfirmDialog();
+                        dialog.setHeader("Delete \"Glider\"?");
+                        dialog.setText(
+                                "Are you sure you want to permanently delete this item?");
+
+                        dialog.setCancelable(true);
+                        dialog.addCancelListener(event -> dialog.close());
+
+                        dialog.setConfirmText("Delete");
+                        dialog.setConfirmButtonTheme("error primary");
+                        dialog.addConfirmListener(event -> gliderService.deleteGlider(deletingId));
+                        dialog.open();
                     }
                 }
                 UI.getCurrent().getPage().reload();
@@ -121,9 +134,14 @@ public class GlidersView extends VerticalLayout {
 
             boolean matchesID = String.valueOf(getId()).equals(searchTerm);
             boolean matchesRegNum = item.getRegistrationNumber().contains(searchTerm);
-            boolean matchesNextCheckupHrs = item.getNextCheckupHrs().equals(searchTerm);
+            boolean matchesFlightCount = String.valueOf(item.getFlightCount()).contains(searchTerm);
+            boolean matchesType = item.getType().contains(searchTerm);
+            boolean matchesTotalFlightTime = String.valueOf(item.getTotalFlightTime()).contains(searchTerm);
+            boolean matchesNextCheckupHrs = String.valueOf(item.getNextCheckupHrs()).contains(searchTerm);
+            boolean matchesNextCheckupFlights = String.valueOf(item.getNextCheckupFlights()).contains(searchTerm);
+            boolean matchesNextCheckupDate = String.valueOf(item.getNextCheckupDate()).contains(searchTerm);
 
-            return matchesID || matchesRegNum || matchesNextCheckupHrs;
+            return matchesID || matchesRegNum || matchesNextCheckupHrs || matchesTotalFlightTime || matchesFlightCount || matchesType || matchesNextCheckupFlights || matchesNextCheckupDate;
         });
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
