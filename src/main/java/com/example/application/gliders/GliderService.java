@@ -44,6 +44,29 @@ public class GliderService {
         return gliders;
     }
 
+    public Glider getGliderById(Long id) {
+        Glider glider = new Glider();
+        try (
+                Connection conn = dataSource.getConnection();
+                Statement st = conn.createStatement();
+                ResultSet rs = st.executeQuery("SELECT * FROM gliders WHERE id = " + id);
+        ) {
+            if(rs.next()) {
+                glider.setId(rs.getLong("id"));
+                glider.setRegistrationNumber(rs.getString("reg_number"));
+                glider.setTotalFlightTime((org.postgresql.util.PGInterval) rs.getObject("total_flight_time"));
+                glider.setFlightCount(rs.getInt("flight_count"));
+                glider.setType(rs.getString("type"));
+                glider.setNextCheckupHrs((org.postgresql.util.PGInterval) rs.getObject("next_checkup_hrs"));
+                glider.setNextCheckupFlights((Integer) rs.getObject("next_checkup_flights"));
+                glider.setNextCheckupDate(rs.getDate("next_checkup_deadline"));
+            }
+        } catch (Exception e) {
+            System.out.println("Exception: " + e.getMessage());
+        }
+        return glider;
+    }
+
     public void addGlider(String regNum, PGInterval totalFlightTime, int flightCount, String type, PGInterval nextCheckupHrs, Integer nextCheckupFlights, Date nextCheckupDate) {
         String sql = "INSERT INTO gliders (reg_number, total_flight_time, flight_count, type, next_checkup_hrs, next_checkup_flights, next_checkup_deadline) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = dataSource.getConnection()) {
