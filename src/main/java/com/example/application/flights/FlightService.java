@@ -27,7 +27,7 @@ public class FlightService {
         this.pilotService = pilotService;
     }
 
-    public List<Flight> getFlights() {
+    public List<Flight> getAllFlights() {
 
 
         List<Flight> flights = new ArrayList<>();

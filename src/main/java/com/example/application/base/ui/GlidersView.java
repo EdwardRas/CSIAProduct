@@ -149,7 +149,7 @@ public class GlidersView extends VerticalLayout {
             if (searchTerm.isEmpty())
                 return true;
 
-            boolean matchesID = String.valueOf(getId()).equals(searchTerm);
+            boolean matchesID = String.valueOf(item.getId()).equals(searchTerm);
             boolean matchesRegNum = item.getRegistrationNumber().contains(searchTerm);
             boolean matchesFlightCount = String.valueOf(item.getFlightCount()).contains(searchTerm);
             boolean matchesType = item.getType().contains(searchTerm);
