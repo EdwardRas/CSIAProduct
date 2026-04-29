@@ -3,8 +3,11 @@ import com.example.application.flights.Flight;
 import com.example.application.flights.FlightService;
 import com.example.application.gliders.Glider;
 import com.example.application.gliders.GliderService;
+import com.example.application.pilots.Pilot;
+import com.example.application.pilots.PilotService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.dialog.Dialog;
@@ -17,8 +20,8 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
 import org.postgresql.util.PGInterval;
@@ -26,6 +29,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @Route("building-apps/navigate/flights")
@@ -33,7 +39,7 @@ public class FlightsView extends VerticalLayout {
 
     private final FlightService flightService;
     @Autowired
-    public FlightsView(FlightService flightService) {
+    public FlightsView(FlightService flightService, GliderService gliderService, PilotService pilotService) {
         this.flightService = flightService;
         List<Flight> records = this.flightService.getAllFlights();
         Grid<Flight> grid = new Grid<>();
@@ -84,7 +90,7 @@ public class FlightsView extends VerticalLayout {
         searchField.setLabel("Search:");
         Button addButton = new Button("Add Flight", e -> {
             try {
-                showAdditionForm(flightService);
+                showAdditionForm(gliderService, pilotService);
             } catch (SQLException ex) {
                 throw new RuntimeException(ex);
             }
@@ -141,7 +147,7 @@ public class FlightsView extends VerticalLayout {
         Button editButton = new Button("Edit Glider", e -> {
             if (selectionModel.getSelectedItem().isPresent()) {
                 try {
-                    showEditForm(flightService, selectionModel.getSelectedItem().get());
+                    showEditForm(gliderService, pilotService, selectionModel.getSelectedItem().get());
                 } catch (SQLException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -169,103 +175,125 @@ public class FlightsView extends VerticalLayout {
 
             boolean matchesID = String.valueOf(item.getId()).equals(searchTerm);
             boolean matchesDate = String.valueOf(item.getDate()).contains(searchTerm);
-            //TODO finish search function
-            boolean matchesFlightCount = String.valueOf(item.getFlightCount()).contains(searchTerm);
-            boolean matchesType = item.getType().contains(searchTerm);
-            boolean matchesTotalFlightTime = String.valueOf(item.getTotalFlightTime()).contains(searchTerm);
-            boolean matchesNextCheckupHrs = String.valueOf(item.getNextCheckupHrs()).contains(searchTerm);
-            boolean matchesNextCheckupFlights = String.valueOf(item.getNextCheckupFlights()).contains(searchTerm);
-            boolean matchesNextCheckupDate = String.valueOf(item.getNextCheckupDate()).contains(searchTerm);
+            boolean matchesGlider = item.getGlider().getRegistrationNumber().contains(searchTerm);
+            boolean matchesPilot1 = item.getPilot1().getName().contains(searchTerm);
+            boolean matchesPilot2 = item.getPilot2().getName().contains(searchTerm);
+            boolean matchesPointOfDeparture = item.getPointOfDeparture().contains(searchTerm);
+            boolean matchesPointOfArrival = item.getPointOfArrival().contains(searchTerm);
+            boolean matchesTimeOfArrival = String.valueOf(item.getTimeOfArrival()).contains(searchTerm);
+            boolean matchesTimeOfDeparture = String.valueOf(item.getTimeOfDeparture()).contains(searchTerm);
+            boolean matchesFlightDuration = String.valueOf(item.getFlightTime()).contains(searchTerm);
+            boolean matchesTask =  item.getTask().contains(searchTerm);
+            boolean matchesPreFlightCheckup = item.getPreFlightCheckup().contains(searchTerm);
 
-            return matchesID || matchesRegNum || matchesNextCheckupHrs || matchesTotalFlightTime || matchesFlightCount || matchesType || matchesNextCheckupFlights || matchesNextCheckupDate;
+            return matchesPreFlightCheckup|| matchesTask || matchesFlightDuration || matchesTimeOfArrival || matchesID || matchesDate || matchesPointOfDeparture || matchesPilot2 || matchesGlider || matchesPilot1 || matchesPointOfArrival || matchesTimeOfDeparture;
         });
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
-        buttonsLayout.add(new Button("Flights", e -> FlightsView.showView()));
+        buttonsLayout.add(new Button("Gliders", e -> FlightsView.showView()));
         buttonsLayout.add(searchField, addButton, deleteButton, editButton, testDialogButton);
         add(buttonsLayout, grid);
     }
-    private void showAdditionForm(FlightService flightService) throws SQLException {
+    private void showAdditionForm(GliderService gliderService, PilotService pilotService) throws SQLException {
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
         formLayout.setExpandFields(true);
-        TextField regNumField = new TextField();
-        regNumField.setLabel("Registration Number");
-        regNumField.setRequired(true);
-        formLayout.setColspan(regNumField, 2);
-        IntegerField totalFlightTimeHrsField = new IntegerField();
-        totalFlightTimeHrsField.setLabel("Hours");
-        totalFlightTimeHrsField.setMin(0);
-        totalFlightTimeHrsField.setRequired(true);
-        IntegerField totalFlightTimeMinsField = new IntegerField();
-        totalFlightTimeMinsField.setLabel("Minutes");
-        totalFlightTimeMinsField.setMin(0);
-        totalFlightTimeMinsField.setMax(59);
-        totalFlightTimeMinsField.setRequired(true);
-        IntegerField flightCountField = new IntegerField();
-        flightCountField.setLabel("Flight Count");
-        flightCountField.setRequired(true);
-        flightCountField.setMin(0);
-        formLayout.setColspan(flightCountField, 2);
-        TextField typeField = new TextField();
-        typeField.setLabel("Type");
-        formLayout.setColspan(typeField, 2);
-        IntegerField nextCheckupHrsHrsField = new IntegerField();
-        nextCheckupHrsHrsField.setLabel("Hours");
-        nextCheckupHrsHrsField.setMin(0);
-        IntegerField nextCheckupHrsMinsField = new IntegerField();
-        nextCheckupHrsMinsField.setLabel("Minutes");
-        nextCheckupHrsMinsField.setMin(0);
-        nextCheckupHrsMinsField.setMax(59);
-        IntegerField nextCheckupFlightsField = new IntegerField();
-        nextCheckupFlightsField.setLabel("Next Checkup in Flights");
-        nextCheckupFlightsField.setMin(0);
-        formLayout.setColspan(nextCheckupFlightsField, 2);
-        DatePicker nextCheckupDateField = new DatePicker();
-        nextCheckupDateField.setLabel("Next Checkup Deadline");
-        formLayout.setColspan(nextCheckupDateField, 2);
-        formLayout.addFormRow(regNumField);
-        formLayout.setColspan(regNumField, 2);
-        formLayout.addFormRow(typeField);
-        formLayout.addFormRow(new Span("Total Flight Time"));
-        formLayout.addFormRow(totalFlightTimeHrsField, totalFlightTimeMinsField);
-        formLayout.addFormRow(flightCountField);
-        formLayout.addFormRow(new Span("Next Checkup in Hours"));
-        formLayout.addFormRow(nextCheckupHrsHrsField, nextCheckupHrsMinsField);
-        formLayout.addFormRow(nextCheckupFlightsField);
-        formLayout.addFormRow(nextCheckupDateField);
+        ComboBox<Glider> gliderField = new ComboBox<>();
+        gliderField.setLabel("Glider");
+        gliderField.setRequired(true);
+        gliderField.setItems(gliderService.getAllGliders());
+        gliderField.setItemLabelGenerator(Glider::getRegistrationNumber);
+        formLayout.setColspan(gliderField, 2);
+        ComboBox<Pilot> pilot1Field = new ComboBox<>();
+        pilot1Field.setLabel("Pilot 1");
+        pilot1Field.setItems(pilotService.getAllPilots());
+        pilot1Field.setRequired(true);
+        pilot1Field.setItemLabelGenerator(Pilot::getName);
+        ComboBox<Pilot> pilot2Field = new ComboBox<>();
+        pilot2Field.setLabel("Pilot 2");
+        pilot2Field.setItems(pilotService.getAllPilots());
+        pilot2Field.setItemLabelGenerator(Pilot::getName);
+        TimePicker timeOfDeparturePicker = new TimePicker();
+        timeOfDeparturePicker.setLabel("Time of departure (UTC)");
+        TimePicker timeOfArrivalPicker = new TimePicker();
+        timeOfArrivalPicker.setLabel("Time of arrival (UTC)");
+        formLayout.setColspan(timeOfDeparturePicker, 2);
+        formLayout.setColspan(timeOfArrivalPicker, 2);
+        timeOfArrivalPicker.setEnabled(false);
+        TextField pointOfDepartureField = new TextField();
+        pointOfDepartureField.setLabel("Point of departure");
+        formLayout.setColspan(pointOfDepartureField, 2);
+        pointOfDepartureField.setRequired(true);
+        TextField pointOfArrivalField = new TextField();
+        pointOfDepartureField.setLabel("Point of arrival");
+        formLayout.setColspan(pointOfArrivalField, 2);
+        pointOfArrivalField.setRequired(true);
+        DatePicker dateField = new DatePicker();
+        dateField.setLabel("Next Checkup Deadline");
+        formLayout.setColspan(dateField, 2);
+        dateField.setRequired(true);
+        TextField taskField = new TextField();
+        taskField.setLabel("Task");
+        formLayout.setColspan(taskField, 2);
+        taskField.setRequired(true);
+        TextField preFlightCheckupField = new TextField();
+        preFlightCheckupField.setLabel("Pre Flight Checkup");
+        formLayout.setColspan(preFlightCheckupField, 2);
+        preFlightCheckupField.setRequired(true);
+        timeOfDeparturePicker.addValueChangeListener(e -> {
+            timeOfArrivalPicker.setEnabled(timeOfDeparturePicker.getValue() != null);
+        });
+        formLayout.addFormRow(gliderField);
+        formLayout.setColspan(gliderField, 2);
+        formLayout.addFormRow(pilot1Field);
+        formLayout.addFormRow(pilot2Field);
+        formLayout.addFormRow(dateField);
+        formLayout.addFormRow(taskField);
+        formLayout.addFormRow(pointOfDepartureField);
+        formLayout.addFormRow(pointOfArrivalField);
+        formLayout.addFormRow(timeOfDeparturePicker);
+        formLayout.addFormRow(timeOfArrivalPicker);
+        formLayout.addFormRow(preFlightCheckupField);
 
         Button addButton = new Button("Add", e -> {
-            String regNum = regNumField.getValue();
-            PGInterval totalFlightTime = null;
-            try {
-                String flightTime = totalFlightTimeHrsField.getValue()+" hours "+totalFlightTimeMinsField.getValue()+" minutes";
-                totalFlightTime = new PGInterval(flightTime);
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
+            Glider glider = gliderField.getValue();
+            Pilot pilot1 = pilot1Field.getValue();
+            Pilot pilot2 = pilot2Field.getValue();
+            String status;
+            if (timeOfDeparturePicker.getValue() == null) {
+                status = "premade";
+            } else if (timeOfArrivalPicker.getValue() == null) {
+                status = "active";
             }
-            Integer flightCount = flightCountField.getValue();
-            String type = typeField.getValue();
-            PGInterval nextCheckupHrs;
-            if(nextCheckupHrsMinsField.getValue() != null && nextCheckupHrsHrsField.getValue()!=null) {
+            else{
+                status = "archival";
+            }
+            PGInterval flightDuration = null;
+            String hours;
+            String minutes;
+            LocalTime timeOfArrival = timeOfArrivalPicker.getValue();
+            LocalTime timeOfDeparture =  timeOfDeparturePicker.getValue();
+            if(status.equals("archival")) {
+                if (timeOfArrival.getHour() - timeOfDeparture.getHour() > 0 && timeOfArrival.getMinute() < timeOfDeparture.getMinute()) {
+                    hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour() - 1);
+                    minutes = String.valueOf(60 - timeOfArrival.getMinute() + timeOfDeparture.getMinute());
+                } else {
+                    hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour());
+                    minutes = String.valueOf(timeOfArrival.getMinute() - timeOfDeparture.getMinute());
+                }
                 try {
-                    nextCheckupHrs = new PGInterval(nextCheckupHrsHrsField.getValue() + " hours" + nextCheckupHrsMinsField.getValue() + " minutes");
+                    flightDuration = new PGInterval(hours + " hours " + minutes + " minutes");
                 } catch (SQLException ex) {
                     throw new RuntimeException(ex);
                 }
             }
-            else {
-                nextCheckupHrs = null;
-            }
-            Integer nextCheckupFlights = nextCheckupFlightsField.getValue();
-            Date nextCheckupDate = null;
-            if(nextCheckupDateField.getValue() != null) {
-                nextCheckupDate = Date.valueOf(nextCheckupDateField.getValue());
-            }
-            flightService.addGlider(regNum, totalFlightTime, flightCount, type, nextCheckupHrs, nextCheckupFlights, nextCheckupDate);
-            additionForm.close();
-            UI.getCurrent().getPage().reload();
+            Date date = Date.valueOf(dateField.getValue());
+            String pointOfArrival = pointOfArrivalField.getValue();
+            String pointOfDeparture = pointOfDepartureField.getValue();
+            String task = taskField.getValue();
+            String preFlightCheckup = preFlightCheckupField.getValue();
+            flightService.addFlight(glider, pilot1, pilot2, status, date, pointOfDeparture, pointOfArrival, Time.valueOf(timeOfDeparture), Time.valueOf(timeOfArrival), flightDuration, task, preFlightCheckup);
         });
         Button cancelButton = new Button("Cancel", e -> additionForm.close());
         additionForm.getFooter().add(cancelButton, addButton);
@@ -273,101 +301,116 @@ public class FlightsView extends VerticalLayout {
         additionForm.open();
 
     }
-    private void showEditForm(GliderService gliderService, Glider glider) throws SQLException {
+    private void showEditForm(GliderService gliderService, PilotService pilotService, Flight flight) throws SQLException {
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
         formLayout.setExpandFields(true);
-        TextField regNumField = new TextField();
-        regNumField.setLabel("Registration Number");
-        regNumField.setRequired(true);
-        regNumField.setValue(glider.getRegistrationNumber());
-        formLayout.setColspan(regNumField, 2);
-        IntegerField totalFlightTimeHrsField = new IntegerField();
-        totalFlightTimeHrsField.setLabel("Hours");
-        totalFlightTimeHrsField.setMin(0);
-        totalFlightTimeHrsField.setRequired(true);
-        totalFlightTimeHrsField.setValue(glider.getTotalFlightTime().getHours());
-        IntegerField totalFlightTimeMinsField = new IntegerField();
-        totalFlightTimeMinsField.setLabel("Minutes");
-        totalFlightTimeMinsField.setMin(0);
-        totalFlightTimeMinsField.setMax(59);
-        totalFlightTimeMinsField.setRequired(true);
-        totalFlightTimeMinsField.setValue(glider.getTotalFlightTime().getMinutes());
-        IntegerField flightCountField = new IntegerField();
-        flightCountField.setLabel("Flight Count");
-        flightCountField.setRequired(true);
-        flightCountField.setMin(0);
-        flightCountField.setValue(glider.getFlightCount());
-        formLayout.setColspan(flightCountField, 2);
-        TextField typeField = new TextField();
-        typeField.setLabel("Type");
-        formLayout.setColspan(typeField, 2);
-        typeField.setValue(glider.getType());
-        IntegerField nextCheckupHrsHrsField = new IntegerField();
-        nextCheckupHrsHrsField.setLabel("Hours");
-        nextCheckupHrsHrsField.setMin(0);
-
-        IntegerField nextCheckupHrsMinsField = new IntegerField();
-        nextCheckupHrsMinsField.setLabel("Minutes");
-        nextCheckupHrsMinsField.setMin(0);
-        nextCheckupHrsMinsField.setMax(59);
-        if(glider.getNextCheckupHrs() != null) {
-            nextCheckupHrsHrsField.setValue(glider.getNextCheckupHrs().getHours());
-            nextCheckupHrsMinsField.setValue(glider.getNextCheckupHrs().getMinutes());
-        }
-        IntegerField nextCheckupFlightsField = new IntegerField();
-        nextCheckupFlightsField.setLabel("Next Checkup in Flights");
-        nextCheckupFlightsField.setMin(0);
-        nextCheckupFlightsField.setValue(glider.getNextCheckupFlights());
-        formLayout.setColspan(nextCheckupFlightsField, 2);
-        DatePicker nextCheckupDateField = new DatePicker();
-        nextCheckupDateField.setLabel("Next Checkup Deadline");
-        if (glider.getNextCheckupDate() != null) {
-            nextCheckupDateField.setValue(glider.getNextCheckupDate().toLocalDate());
-        }
-        formLayout.setColspan(nextCheckupDateField, 2);
-        formLayout.addFormRow(regNumField);
-        formLayout.setColspan(regNumField, 2);
-        formLayout.addFormRow(typeField);
-        formLayout.addFormRow(new Span("Total Flight Time"));
-        formLayout.addFormRow(totalFlightTimeHrsField, totalFlightTimeMinsField);
-        formLayout.addFormRow(flightCountField);
-        formLayout.addFormRow(new Span("Next Checkup in Hours"));
-        formLayout.addFormRow(nextCheckupHrsHrsField, nextCheckupHrsMinsField);
-        formLayout.addFormRow(nextCheckupFlightsField);
-        formLayout.addFormRow(nextCheckupDateField);
+        ComboBox<Glider> gliderField = new ComboBox<>();
+        gliderField.setLabel("Glider");
+        gliderField.setRequired(true);
+        gliderField.setItems(gliderService.getAllGliders());
+        gliderField.setItemLabelGenerator(Glider::getRegistrationNumber);
+        gliderField.setValue(flight.getGlider());
+        formLayout.setColspan(gliderField, 2);
+        ComboBox<Pilot> pilot1Field = new ComboBox<>();
+        pilot1Field.setLabel("Pilot 1");
+        pilot1Field.setItems(pilotService.getAllPilots());
+        pilot1Field.setRequired(true);
+        pilot1Field.setValue(flight.getPilot1());
+        pilot1Field.setItemLabelGenerator(Pilot::getName);
+        ComboBox<Pilot> pilot2Field = new ComboBox<>();
+        pilot2Field.setLabel("Pilot 2");
+        pilot2Field.setItems(pilotService.getAllPilots());
+        pilot2Field.setValue(flight.getPilot2());
+        pilot2Field.setItemLabelGenerator(Pilot::getName);
+        TimePicker timeOfDeparturePicker = new TimePicker();
+        timeOfDeparturePicker.setLabel("Time of departure (UTC)");
+        timeOfDeparturePicker.setValue(LocalTime.of(flight.getTimeOfDeparture().getHours(), flight.getTimeOfDeparture().getMinutes()));
+        TimePicker timeOfArrivalPicker = new TimePicker();
+        timeOfArrivalPicker.setLabel("Time of arrival (UTC)");
+        timeOfArrivalPicker.setValue(LocalTime.of(flight.getTimeOfArrival().getHours(), flight.getTimeOfArrival().getMinutes()));
+        formLayout.setColspan(timeOfDeparturePicker, 2);
+        formLayout.setColspan(timeOfArrivalPicker, 2);
+        timeOfArrivalPicker.setEnabled(false);
+        TextField pointOfDepartureField = new TextField();
+        pointOfDepartureField.setLabel("Point of departure");
+        pointOfDepartureField.setValue(flight.getPointOfDeparture());
+        formLayout.setColspan(pointOfDepartureField, 2);
+        pointOfDepartureField.setRequired(true);
+        TextField pointOfArrivalField = new TextField();
+        pointOfDepartureField.setLabel("Point of arrival");
+        formLayout.setColspan(pointOfArrivalField, 2);
+        pointOfArrivalField.setRequired(true);
+        pointOfArrivalField.setValue(flight.getPointOfArrival());
+        DatePicker dateField = new DatePicker();
+        dateField.setLabel("Next Checkup Deadline");
+        formLayout.setColspan(dateField, 2);
+        dateField.setRequired(true);
+        dateField.setValue(LocalDate.of(flight.getDate().getYear(), flight.getDate().getMonth(), flight.getDate().getDay()));
+        TextField taskField = new TextField();
+        taskField.setLabel("Task");
+        taskField.setValue(flight.getTask());
+        formLayout.setColspan(taskField, 2);
+        taskField.setRequired(true);
+        TextField preFlightCheckupField = new TextField();
+        preFlightCheckupField.setLabel("Pre Flight Checkup");
+        preFlightCheckupField.setValue(flight.getPreFlightCheckup());
+        formLayout.setColspan(preFlightCheckupField, 2);
+        preFlightCheckupField.setRequired(true);
+        timeOfDeparturePicker.addValueChangeListener(e -> {
+            timeOfArrivalPicker.setEnabled(timeOfDeparturePicker.getValue() != null);
+        });
+        formLayout.addFormRow(gliderField);
+        formLayout.setColspan(gliderField, 2);
+        formLayout.addFormRow(pilot1Field);
+        formLayout.addFormRow(pilot2Field);
+        formLayout.addFormRow(dateField);
+        formLayout.addFormRow(taskField);
+        formLayout.addFormRow(pointOfDepartureField);
+        formLayout.addFormRow(pointOfArrivalField);
+        formLayout.addFormRow(timeOfDeparturePicker);
+        formLayout.addFormRow(timeOfArrivalPicker);
+        formLayout.addFormRow(preFlightCheckupField);
 
         Button editButton = new Button("Edit", e -> {
-            String regNum = regNumField.getValue();
-            PGInterval totalFlightTime = null;
-            try {
-                String flightTime = totalFlightTimeHrsField.getValue()+" hours "+totalFlightTimeMinsField.getValue()+" minutes";
-                totalFlightTime = new PGInterval(flightTime);
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
+            Glider glider = gliderField.getValue();
+            Pilot pilot1 = pilot1Field.getValue();
+            Pilot pilot2 = pilot2Field.getValue();
+            String status;
+            if (timeOfDeparturePicker.getValue() == null) {
+                status = "premade";
+            } else if (timeOfArrivalPicker.getValue() == null) {
+                status = "active";
             }
-            Integer flightCount = flightCountField.getValue();
-            String type = typeField.getValue();
-            PGInterval nextCheckupHrs;
-            if(nextCheckupHrsMinsField.getValue() != null && nextCheckupHrsHrsField.getValue()!=null) {
+            else{
+                status = "archival";
+            }
+            PGInterval flightDuration = null;
+            String hours;
+            String minutes;
+            LocalTime timeOfArrival = timeOfArrivalPicker.getValue();
+            LocalTime timeOfDeparture =  timeOfDeparturePicker.getValue();
+            if(status.equals("archival")) {
+                if (timeOfArrival.getHour() - timeOfDeparture.getHour() > 0 && timeOfArrival.getMinute() < timeOfDeparture.getMinute()) {
+                    hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour() - 1);
+                    minutes = String.valueOf(60 - timeOfArrival.getMinute() + timeOfDeparture.getMinute());
+                } else {
+                    hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour());
+                    minutes = String.valueOf(timeOfArrival.getMinute() - timeOfDeparture.getMinute());
+                }
                 try {
-                    nextCheckupHrs = new PGInterval(nextCheckupHrsHrsField.getValue() + " hours " + nextCheckupHrsMinsField.getValue() + " minutes");
+                    flightDuration = new PGInterval(hours + " hours " + minutes + " minutes");
                 } catch (SQLException ex) {
                     throw new RuntimeException(ex);
                 }
             }
-            else {
-                nextCheckupHrs = null;
-            }
-            Integer nextCheckupFlights = nextCheckupFlightsField.getValue();
-            Date nextCheckupDate = null;
-            if(nextCheckupDateField.getValue() != null) {
-                nextCheckupDate = Date.valueOf(nextCheckupDateField.getValue());
-            }
-            gliderService.editGlider(glider, regNum, totalFlightTime, flightCount, type, nextCheckupHrs, nextCheckupFlights, nextCheckupDate);
-            editForm.close();
-            UI.getCurrent().getPage().reload();
+            Date date = Date.valueOf(dateField.getValue());
+            String pointOfArrival = pointOfArrivalField.getValue();
+            String pointOfDeparture = pointOfDepartureField.getValue();
+            String task = taskField.getValue();
+            String preFlightCheckup = preFlightCheckupField.getValue();
+            flightService.editFlight(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, Time.valueOf(timeOfDeparture), Time.valueOf(timeOfArrival), task, preFlightCheckup);
         });
         Button cancelButton = new Button("Cancel", e -> editForm.close());
         editForm.getFooter().add(cancelButton, editButton);

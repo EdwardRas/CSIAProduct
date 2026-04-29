@@ -1,13 +1,14 @@
 package com.example.application.pilots;
 
+import com.example.application.gliders.Glider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+@Service
 public class PilotService {
     private final DataSource dataSource;
 
@@ -34,5 +35,25 @@ public class PilotService {
             throw new RuntimeException(e);
         }
         return null;
+    }
+    public List<Pilot> getAllPilots(){
+        List<Pilot> pilots = new ArrayList<>();
+        try (
+                Connection conn = dataSource.getConnection();
+                Statement st = conn.createStatement();
+                ResultSet rs = st.executeQuery("SELECT * FROM pilots");
+        ) {
+            while (rs.next()) {
+                Pilot pilot = new Pilot();
+                pilot.setId(rs.getLong("id"));
+                pilot.name = rs.getString("name");
+                pilot.setLicenseNumber(rs.getString("license_number"));
+                pilot.isFlying = rs.getBoolean("is_flying");
+                pilots.add(pilot);
+            }
+        } catch (Exception e) {
+            System.out.println("Exception: " + e.getMessage());
+        }
+        return  pilots;
     }
 }
