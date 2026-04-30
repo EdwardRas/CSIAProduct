@@ -47,15 +47,16 @@ public class FlightsView extends VerticalLayout {
         Grid.Column<Flight> IDColumn = grid
                 .addColumn(Flight::getId).setHeader("ID")
                 .setResizable(true).setSortable(true);
+        //TODO make the glider, pilot1, pilot2 columns display registration number and names
+        Grid.Column<Flight> gliderColumn = grid
+                .addColumn(Flight::getGlider)
+                .setHeader("Glider").setResizable(true).setSortable(true);
         Grid.Column<Flight> pilot1Column = grid
                 .addColumn(Flight::getPilot1)
                 .setHeader("Pilot 1").setResizable(true).setSortable(true);
         Grid.Column<Flight> pilot2Column = grid
                 .addColumn(Flight::getPilot2)
                 .setHeader("Pilot 2").setResizable(true).setSortable(true);
-        Grid.Column<Flight> gliderColumn = grid
-                .addColumn(Flight::getGlider)
-                .setHeader("Glider").setResizable(true).setSortable(true);
         Grid.Column<Flight> dateColumn = grid
                 .addColumn(Flight::getDate)
                 .setHeader("Date").setResizable(true).setSortable(true);
@@ -123,7 +124,7 @@ public class FlightsView extends VerticalLayout {
                 if (deletingId >= 0) {
                     //Dialog not working, deletion works
                     ConfirmDialog deleteDialog = new ConfirmDialog();
-                    deleteDialog.setHeader("Delete Glider?");
+                    deleteDialog.setHeader("Delete Flight?");
                     deleteDialog.setText(
                             "Are you sure you want to permanently delete this item?");
 
@@ -190,7 +191,7 @@ public class FlightsView extends VerticalLayout {
         });
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
-        buttonsLayout.add(new Button("Gliders", e -> FlightsView.showView()));
+        buttonsLayout.add(new Button("Gliders", e -> GlidersView.showView()));
         buttonsLayout.add(searchField, addButton, deleteButton, editButton, testDialogButton);
         add(buttonsLayout, grid);
     }
@@ -226,7 +227,7 @@ public class FlightsView extends VerticalLayout {
         formLayout.setColspan(pointOfDepartureField, 2);
         pointOfDepartureField.setRequired(true);
         TextField pointOfArrivalField = new TextField();
-        pointOfDepartureField.setLabel("Point of arrival");
+        pointOfArrivalField.setLabel("Point of arrival");
         formLayout.setColspan(pointOfArrivalField, 2);
         pointOfArrivalField.setRequired(true);
         DatePicker dateField = new DatePicker();
@@ -293,7 +294,12 @@ public class FlightsView extends VerticalLayout {
             String pointOfDeparture = pointOfDepartureField.getValue();
             String task = taskField.getValue();
             String preFlightCheckup = preFlightCheckupField.getValue();
-            flightService.addFlight(glider, pilot1, pilot2, status, date, pointOfDeparture, pointOfArrival, Time.valueOf(timeOfDeparture), Time.valueOf(timeOfArrival), flightDuration, task, preFlightCheckup);
+            flightService.addFlight(glider, pilot1, pilot2, status, date, pointOfDeparture, pointOfArrival, Time.valueOf(timeOfDeparture), Time.valueOf(timeOfArrival), task, preFlightCheckup);
+            try {
+                gliderService.editGlider(glider, glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours()) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() + "minutes")), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate());
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
         });
         Button cancelButton = new Button("Cancel", e -> additionForm.close());
         additionForm.getFooter().add(cancelButton, addButton);
@@ -339,7 +345,7 @@ public class FlightsView extends VerticalLayout {
         formLayout.setColspan(pointOfDepartureField, 2);
         pointOfDepartureField.setRequired(true);
         TextField pointOfArrivalField = new TextField();
-        pointOfDepartureField.setLabel("Point of arrival");
+        pointOfArrivalField.setLabel("Point of arrival");
         formLayout.setColspan(pointOfArrivalField, 2);
         pointOfArrivalField.setRequired(true);
         pointOfArrivalField.setValue(flight.getPointOfArrival());

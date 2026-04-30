@@ -56,4 +56,29 @@ public class PilotService {
         }
         return  pilots;
     }
+    public void addPilot(String name, String licenseNumber, String status){
+        String sql = "INSERT INTO pilots (name, license_number, status) VALUES (?, ?, ?)";
+        try (Connection conn = dataSource.getConnection()) {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, name);
+            ps.setString(2, licenseNumber);
+            ps.setString(3, status);
+            ps.execute();
+        } catch (Exception e) {
+            System.out.println("Exception: " + e.getMessage());
+        }
+    }
+    public void deletePilot(Long id){
+        String sql = "DELETE FROM pilots WHERE id=?";
+        try (Connection conn = dataSource.getConnection()) {
+            PreparedStatement st = conn.prepareStatement(sql);
+            st.setLong(1, id);
+            st.execute();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    public void editPilot(String name, String licenseNumber, String status){
+
+    }
 }

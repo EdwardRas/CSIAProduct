@@ -4,7 +4,6 @@ import com.example.application.gliders.Glider;
 import com.example.application.gliders.GliderService;
 import com.example.application.pilots.Pilot;
 import com.example.application.pilots.PilotService;
-import org.postgresql.util.PGInterval;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -74,7 +73,7 @@ public class FlightService {
     }
 
 
-    public void addFlight(Glider glider, Pilot pilot1, Pilot pilot2, String status, Date date, String pointOfDeparture, String pointOfArrival, Time timeOfDeparture, Time timeOfArrival, PGInterval flightTime, String task, String preFlightCheckup) {
+    public void addFlight(Glider glider, Pilot pilot1, Pilot pilot2, String status, Date date, String pointOfDeparture, String pointOfArrival, Time timeOfDeparture, Time timeOfArrival, String task, String preFlightCheckup) {
         String sql = "INSERT INTO flights (glider_id, pilot_1_id, pilot_2_id, status, date, point_of_departure, point_of_arrival, time_of_departure, time_of_arrival, flight_duration, task, pre_flight_checkup) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = dataSource.getConnection()) {
             PreparedStatement ps = conn.prepareStatement(sql);
