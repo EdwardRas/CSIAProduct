@@ -296,8 +296,14 @@ public class FlightsView extends VerticalLayout {
             String preFlightCheckup = preFlightCheckupField.getValue();
             flightService.addFlight(glider, pilot1, pilot2, status, date, pointOfDeparture, pointOfArrival, Time.valueOf(timeOfDeparture), Time.valueOf(timeOfArrival), task, preFlightCheckup);
             try {
-                gliderService.editGlider(glider, glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours()) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() + "minutes")), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate());
-            } catch (SQLException ex) {
+                if(flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() < 60) {
+                    gliderService.editGlider(glider, glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours()) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes()) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate());
+                }
+                else{
+                    gliderService.editGlider(glider, glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() + 1) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - 60) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate());
+                }
+            }
+            catch (SQLException ex) {
                 throw new RuntimeException(ex);
             }
         });
@@ -416,7 +422,19 @@ public class FlightsView extends VerticalLayout {
             String pointOfDeparture = pointOfDepartureField.getValue();
             String task = taskField.getValue();
             String preFlightCheckup = preFlightCheckupField.getValue();
+            PGInterval prevFlightTime = flight.getFlightTime();
             flightService.editFlight(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, Time.valueOf(timeOfDeparture), Time.valueOf(timeOfArrival), task, preFlightCheckup);
+            try {
+                if(flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() < 60 || flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() > 0) {
+                    gliderService.editGlider(glider, glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() - prevFlightTime.getHours()) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes()) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate());
+                }
+                else if(flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() > 60){
+                    gliderService.editGlider(glider, glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() - prevFlightTime.getHours() + 1) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() - 60) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate());
+                }
+            }
+            catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
         });
         Button cancelButton = new Button("Cancel", e -> editForm.close());
         editForm.getFooter().add(cancelButton, editButton);

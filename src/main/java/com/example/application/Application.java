@@ -4,6 +4,7 @@ import com.example.application.flights.Flight;
 import com.example.application.gliders.Glider;
 import com.example.application.pilots.Pilot;
 import com.vaadin.flow.theme.lumo.Lumo;
+import org.postgresql.util.PGInterval;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -26,7 +27,7 @@ import java.util.Properties;
 @StyleSheet("styles.css") // Your custom styles
 public class Application implements AppShellConfigurator {
 
-    public static void main(String[] args) {
+    public static void main(String[] args){
         SpringApplication.run(Application.class, args);
     }
 }

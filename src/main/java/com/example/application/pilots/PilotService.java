@@ -8,6 +8,8 @@ import javax.sql.DataSource;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+
 @Service
 public class PilotService {
     private final DataSource dataSource;
@@ -78,7 +80,9 @@ public class PilotService {
             throw new RuntimeException(e);
         }
     }
-    public void editPilot(String name, String licenseNumber, String status){
+    public void editPilot(Pilot pilot, String name, String licenseNumber, String status){
+        if(!pilot.name.equals(name)){
 
+        }
     }
 }
