@@ -192,6 +192,7 @@ public class FlightsView extends VerticalLayout {
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
         buttonsLayout.add(new Button("Gliders", e -> GlidersView.showView()));
+        buttonsLayout.add(new Button("Pilots", e -> PilotsView.showView()));
         buttonsLayout.add(searchField, addButton, deleteButton, editButton, testDialogButton);
         add(buttonsLayout, grid);
     }
@@ -218,6 +219,8 @@ public class FlightsView extends VerticalLayout {
         TimePicker timeOfDeparturePicker = new TimePicker();
         timeOfDeparturePicker.setLabel("Time of departure (UTC)");
         TimePicker timeOfArrivalPicker = new TimePicker();
+        timeOfDeparturePicker.addValueChangeListener(e -> timeOfArrivalPicker.setMin(e.getValue()));
+        timeOfArrivalPicker.addValueChangeListener(e -> timeOfDeparturePicker.setMax(e.getValue()));
         timeOfArrivalPicker.setLabel("Time of arrival (UTC)");
         formLayout.setColspan(timeOfDeparturePicker, 2);
         formLayout.setColspan(timeOfArrivalPicker, 2);
@@ -231,7 +234,7 @@ public class FlightsView extends VerticalLayout {
         formLayout.setColspan(pointOfArrivalField, 2);
         pointOfArrivalField.setRequired(true);
         DatePicker dateField = new DatePicker();
-        dateField.setLabel("Next Checkup Deadline");
+        dateField.setLabel("Date");
         formLayout.setColspan(dateField, 2);
         dateField.setRequired(true);
         TextField taskField = new TextField();
@@ -355,8 +358,10 @@ public class FlightsView extends VerticalLayout {
         formLayout.setColspan(pointOfArrivalField, 2);
         pointOfArrivalField.setRequired(true);
         pointOfArrivalField.setValue(flight.getPointOfArrival());
+        timeOfDeparturePicker.addValueChangeListener(e -> timeOfArrivalPicker.setMin(e.getValue()));
+        timeOfArrivalPicker.addValueChangeListener(e -> timeOfDeparturePicker.setMax(e.getValue()));
         DatePicker dateField = new DatePicker();
-        dateField.setLabel("Next Checkup Deadline");
+        dateField.setLabel("Date");
         formLayout.setColspan(dateField, 2);
         dateField.setRequired(true);
         dateField.setValue(LocalDate.of(flight.getDate().getYear(), flight.getDate().getMonth(), flight.getDate().getDay()));
@@ -390,11 +395,18 @@ public class FlightsView extends VerticalLayout {
             Pilot pilot1 = pilot1Field.getValue();
             Pilot pilot2 = pilot2Field.getValue();
             String status;
+            pilotService.editPilot(flight.getPilot1(), flight.getPilot1().getName(), flight.getPilot1().getLicenseNumber(), false);
+            if(flight.getPilot2() != null){
+                pilotService.editPilot(flight.getPilot2(), flight.getPilot2().getName(), flight.getPilot2().getLicenseNumber(), false);
+            }
             if (timeOfDeparturePicker.getValue() == null) {
                 status = "premade";
             } else if (timeOfArrivalPicker.getValue() == null) {
                 status = "active";
-            }
+                pilotService.editPilot(pilot1, pilot1.getName(), pilot1.getLicenseNumber(), true);
+                if(pilot2 != null){
+                    pilotService.editPilot(pilot2, pilot2.getName(), pilot2.getLicenseNumber(), true);                }
+                }
             else{
                 status = "archival";
             }

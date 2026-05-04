@@ -163,6 +163,7 @@ public class GlidersView extends VerticalLayout {
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
         buttonsLayout.add(new Button("Flights", e -> FlightsView.showView()));
+        buttonsLayout.add(new Button("Pilots", e -> PilotsView.showView()));
         buttonsLayout.add(searchField, addButton, deleteButton, editButton, testDialogButton);
         add(buttonsLayout, grid);
     }

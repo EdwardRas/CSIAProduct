@@ -2,7 +2,7 @@ package com.example.application.pilots;
 
 public class Pilot {
     private Long id;
-    public String name;
+    private String name;
     private String licenseNumber;
     public boolean isFlying;
 
@@ -31,5 +31,13 @@ public class Pilot {
 
     public void setLicenseNumber(String licenseNumber) {
         this.licenseNumber = licenseNumber;
+    }
+
+    public boolean isFlying() {
+        return isFlying;
+    }
+
+    public void setFlying(boolean flying) {
+        isFlying = flying;
     }
 }
