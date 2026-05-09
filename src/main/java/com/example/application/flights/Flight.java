@@ -6,10 +6,9 @@ import org.postgresql.util.PGInterval;
 
 import java.sql.Date;
 import java.sql.Time;
+import java.util.List;
 
 public class Flight {
-
-    public static final int DESCRIPTION_MAX_LENGTH = 300;
 
     private Long id;
     public boolean isActive;
@@ -124,6 +123,18 @@ public class Flight {
     public void setId(Long id) {
         this.id = id;
     }
+    public Flight(Glider glider, Pilot pilot1, Pilot pilot2, Date date, String pointOfDeparture, String pointOfArrival, Time timeOfDeparture, Time timeOfArrival, String task, String preFlightCheckup) {
+        this.pilot1 = pilot1;
+        this.pilot2 = pilot2;
+        this.date = date;
+        this.pointOfDeparture = pointOfDeparture;
+        this.pointOfArrival = pointOfArrival;
+        this.timeOfDeparture = timeOfDeparture;
+        this.timeOfArrival = timeOfArrival;
+        this.task = task;
+        this.preFlightCheckup = preFlightCheckup;
+        this.glider = glider;
+    }
 
     @Override
     public boolean equals(Object obj) {
@@ -141,9 +152,135 @@ public class Flight {
     @Override
     public int hashCode() {
         // Hashcode should never change during the lifetime of an object. Because of
-        // this we can't use getId() to calculate the hashcode. Unless you have sets
+        // this we can't use getId() to calculate the hashcode. Unless yu have sets
         // with lots of entities in them, returning the same hashcode should not be a
         // problem.
         return getClass().hashCode();
+    }
+    public boolean validateAddition(List<Flight> filteredByGlider, List<Flight> filteredByPilot1, List<Flight> filteredByPilot2) {
+        if (isActive || isArchival) {
+            if (isActive) {
+                if (pilot1.isFlying || glider.isFlying) {
+                    return false;
+                }
+                if (pilot2 != null) {
+                    if (pilot2.isFlying) {
+                        return false;
+                    }
+                }
+            }
+            if (!filteredByGlider.isEmpty()) {
+                for (int i = 0; i < filteredByGlider.size(); i++) {
+                    if (filteredByGlider.get(i).getTimeOfDeparture().before(timeOfDeparture) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfDeparture)) {
+                        return false;
+                    }
+                }
+            }
+            if (!filteredByPilot1.isEmpty()) {
+                for (int i = 0; i < filteredByGlider.size(); i++) {
+                    if (filteredByPilot1.get(i).getTimeOfDeparture().before(timeOfDeparture) && filteredByPilot1.get(i).getTimeOfArrival().after(timeOfDeparture)) {
+                        return false;
+                    }
+                }
+            }
+            if (filteredByPilot2 !=null) {
+                if (!filteredByPilot2.isEmpty()) {
+                    for (int i = 0; i < filteredByGlider.size(); i++) {
+                        if (filteredByPilot2.get(i).getTimeOfDeparture().before(timeOfDeparture) && filteredByPilot2.get(i).getTimeOfArrival().after(timeOfDeparture)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            if (isArchival) {
+                if (!filteredByGlider.isEmpty()) {
+                    for (int i = 0; i < filteredByGlider.size(); i++) {
+                        if (filteredByGlider.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfArrival)) {
+                            return false;
+                        }
+                    }
+                }
+                if (!filteredByPilot1.isEmpty()) {
+                    for (int i = 0; i < filteredByGlider.size(); i++) {
+                        if (filteredByPilot1.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot1.get(i).getTimeOfArrival().after(timeOfArrival)) {
+                            return false;
+                        }
+                    }
+                }
+                if (filteredByPilot2 !=null) {
+                    if (!filteredByPilot2.isEmpty()) {
+                        for (int i = 0; i < filteredByGlider.size(); i++) {
+                            if (filteredByPilot2.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot2.get(i).getTimeOfArrival().after(timeOfArrival)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    public boolean validateEdit(Flight oldFlight, List<Flight> filteredByGlider, List<Flight> filteredByPilot1, List<Flight> filteredByPilot2) {
+        if (isActive || isArchival) {
+            if (isActive && !oldFlight.isActive) {
+                if (pilot1.isFlying || glider.isFlying) {
+                    return false;
+                }
+                if (pilot2 != null) {
+                    if (pilot2.isFlying) {
+                        return false;
+                    }
+                }
+            }
+            if (!filteredByGlider.isEmpty()) {
+                for (int i = 0; i < filteredByGlider.size(); i++) {
+                    if (filteredByGlider.get(i).getTimeOfDeparture().before(timeOfDeparture) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfDeparture) && !filteredByGlider.get(i).equals(oldFlight)) {
+                        return false;
+                    }
+                }
+            }
+            if (!filteredByPilot1.isEmpty()) {
+                for (int i = 0; i < filteredByGlider.size(); i++) {
+                    if (filteredByPilot1.get(i).getTimeOfDeparture().before(timeOfDeparture) && filteredByPilot1.get(i).getTimeOfArrival().after(timeOfDeparture) && !filteredByPilot1.get(i).equals(oldFlight)) {
+                        return false;
+                    }
+                }
+            }
+            if (filteredByPilot2 !=null) {
+                if (!filteredByPilot2.isEmpty()) {
+                    for (int i = 0; i < filteredByGlider.size(); i++) {
+                        if (filteredByPilot2.get(i).getTimeOfDeparture().before(timeOfDeparture) && filteredByPilot2.get(i).getTimeOfArrival().after(timeOfDeparture) && !filteredByPilot2.get(i).equals(oldFlight)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+            if (isArchival) {
+                if (!filteredByGlider.isEmpty()) {
+                    for (int i = 0; i < filteredByGlider.size(); i++) {
+                        if (filteredByGlider.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfArrival) && !filteredByGlider.get(i).equals(oldFlight)) {
+                            return false;
+                        }
+                    }
+                }
+                if (!filteredByPilot1.isEmpty()) {
+                    for (int i = 0; i < filteredByGlider.size(); i++) {
+                        if (filteredByPilot1.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot1.get(i).getTimeOfArrival().after(timeOfArrival) && !filteredByPilot1.get(i).equals(oldFlight)) {
+                            return false;
+                        }
+                    }
+                }
+                if (filteredByPilot2 !=null) {
+                    if (!filteredByPilot2.isEmpty()) {
+                        for (int i = 0; i < filteredByGlider.size(); i++) {
+                            if (filteredByPilot2.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot2.get(i).getTimeOfArrival().after(timeOfArrival) && !filteredByPilot2.get(i).equals(oldFlight)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 }

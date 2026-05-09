@@ -29,7 +29,7 @@ public class PilotService {
                 pilot.setId(id);
                 pilot.setName(rs.getString("name"));
                 pilot.setLicenseNumber(rs.getString("license_number"));
-                pilot.isFlying = rs.getBoolean("isFlying");
+                pilot.isFlying = rs.getBoolean("is_flying");
                 return pilot;
             }
         }

@@ -36,6 +36,7 @@ public class GliderService {
                 glider.setNextCheckupHrs((org.postgresql.util.PGInterval) rs.getObject("next_checkup_hrs"));
                 glider.setNextCheckupFlights((Integer) rs.getObject("next_checkup_flights"));
                 glider.setNextCheckupDate(rs.getDate("next_checkup_deadline"));
+                glider.isFlying = rs.getBoolean("is_flying");
                 gliders.add(glider);
             }
         } catch (Exception e) {
@@ -60,6 +61,7 @@ public class GliderService {
                 glider.setNextCheckupHrs((org.postgresql.util.PGInterval) rs.getObject("next_checkup_hrs"));
                 glider.setNextCheckupFlights((Integer) rs.getObject("next_checkup_flights"));
                 glider.setNextCheckupDate(rs.getDate("next_checkup_deadline"));
+                glider.isFlying = rs.getBoolean("is_flying");
             }
         } catch (Exception e) {
             System.out.println("Exception: " + e.getMessage());
@@ -95,7 +97,15 @@ public class GliderService {
         }
     }
 
-    public void editGlider(Glider glider, String regNum, PGInterval totalFlightTime, int flightCount, String type, PGInterval nextCheckupHrs, Integer nextCheckupFlights, Date nextCheckupDate) {
+    public void editGlider(Glider glider, Glider editedGlider) {
+        String regNum = editedGlider.getRegistrationNumber();
+        PGInterval totalFlightTime = editedGlider.getTotalFlightTime();
+        int flightCount = editedGlider.getFlightCount();
+        String type = editedGlider.getType();
+        PGInterval nextCheckupHrs = editedGlider.getNextCheckupHrs();
+        Integer nextCheckupFlights = editedGlider.getNextCheckupFlights();
+        Date nextCheckupDate = editedGlider.getNextCheckupDate();
+        boolean isFlying = editedGlider.isFlying;
         if (!glider.getRegistrationNumber().equals(regNum)) {
             String sql = "UPDATE gliders SET reg_number = ? WHERE id = " + glider.getId();
             try (Connection conn = dataSource.getConnection()) {
@@ -149,7 +159,7 @@ public class GliderService {
             }
         }
         if (glider.getNextCheckupHrs() == null && nextCheckupHrs != null) {
-            if (!glider.getNextCheckupHrs().equals(nextCheckupHrs)) {
+            if (!nextCheckupHrs.equals(glider.getNextCheckupHrs())) {
                 String sql = "UPDATE gliders SET next_checkup_hrs = ? WHERE id = " + glider.getId();
                 try (Connection conn = dataSource.getConnection()) {
                     PreparedStatement ps = conn.prepareStatement(sql);
@@ -200,6 +210,17 @@ public class GliderService {
             try (Connection conn = dataSource.getConnection()) {
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ps.setDate(1, nextCheckupDate);
+                ps.execute();
+            }
+            catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if(glider.isFlying != isFlying){
+            String sql = "UPDATE gliders SET is_flying = ? WHERE id = " + glider.getId();
+            try (Connection conn = dataSource.getConnection()) {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ps.setBoolean(1, isFlying);
                 ps.execute();
             }
             catch (SQLException e) {

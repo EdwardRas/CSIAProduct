@@ -1,4 +1,6 @@
 package com.example.application.base.ui;
+import com.example.application.flights.Flight;
+import com.example.application.flights.FlightService;
 import com.example.application.gliders.Glider;
 import com.example.application.gliders.GliderService;
 import com.vaadin.flow.component.UI;
@@ -29,9 +31,11 @@ import java.util.List;
 @Route("")
 public class GlidersView extends VerticalLayout {
     private final GliderService gliderService;
+    private final FlightService flightService;
     @Autowired
-    public GlidersView(GliderService gliderService) {
+    public GlidersView(GliderService gliderService,  FlightService flightService) {
         this.gliderService = gliderService;
+        this.flightService = flightService;
         List<Glider> records = this.gliderService.getAllGliders();
         Grid<Glider> grid = new Grid<>();
         grid.setSelectionMode(Grid.SelectionMode.SINGLE);
@@ -71,8 +75,6 @@ public class GlidersView extends VerticalLayout {
                 throw new RuntimeException(ex);
             }
         });
-        Span status = new Span();
-        status.setVisible(false);
 
         ConfirmDialog dialog = new ConfirmDialog();
         dialog.setHeader("Delete \"Report Q4\"?");
@@ -89,30 +91,36 @@ public class GlidersView extends VerticalLayout {
         Button testDialogButton = new Button("Open confirm dialog");
         testDialogButton.addClickListener(event -> {
             dialog.open();
-            status.setVisible(false);
         });
         GridSingleSelectionModel<Glider> selectionModel = (GridSingleSelectionModel<Glider>)grid.getSelectionModel();
-        Button deleteButton = new Button("Delete Glider", e -> {
-                Long deletingId;
-                if (selectionModel.getSelectedItem().isPresent()) {
-                    deletingId = selectionModel.getSelectedItem().get().getId();
-                    if (deletingId >= 0) {
-                        //Dialog not working, deletion works
-                        ConfirmDialog deleteDialog = new ConfirmDialog();
-                        deleteDialog.setHeader("Delete Glider?");
-                        deleteDialog.setText(
-                                "Are you sure you want to permanently delete this item?");
+        Button deleteButton = new Button("Delete Glider");
+        deleteButton.addClickListener(e -> {
+            Long deletingId;
+            if (selectionModel.getSelectedItem().isPresent()) {
+                deletingId = selectionModel.getSelectedItem().get().getId();
+                if (deletingId >= 0) {
+                    ConfirmDialog deleteDialog = new ConfirmDialog();
+                    deleteDialog.setHeader("Delete Glider?");
+                    deleteDialog.setText("Are you sure you want to permanently delete this item? This will also delete all flights associated with this item");
 
-                        deleteDialog.setCancelable(true);
-                        //deleteDialog.addCancelListener(event -> deleteDialog.close());
+                    deleteDialog.setCancelable(true);
+                    deleteDialog.addCancelListener(event -> deleteDialog.close());
 
-                        deleteDialog.setConfirmText("Delete");
-                        deleteDialog.setConfirmButtonTheme("error primary");
-                        deleteDialog.addConfirmListener(event -> gliderService.deleteGlider(deletingId));
-                        deleteDialog.open();
-                    }
+                    deleteDialog.setConfirmText("Delete");
+                    deleteDialog.setConfirmButtonTheme("error primary");
+                    deleteDialog.addConfirmListener(event -> {
+                        try {
+                            gliderService.deleteGlider(deletingId);
+                            flightService.deleteFlightByGliderId(deletingId);
+                            UI.getCurrent().getPage().reload();;
+                        } catch (SQLException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    });
+                    deleteDialog.open();
                 }
-                UI.getCurrent().getPage().reload();
+            }
+
         });
         grid.addSelectionListener(e -> {
             deleteButton.setEnabled(true);
@@ -347,7 +355,18 @@ public class GlidersView extends VerticalLayout {
             if(nextCheckupDateField.getValue() != null) {
                 nextCheckupDate = Date.valueOf(nextCheckupDateField.getValue());
             }
-            gliderService.editGlider(glider, regNum, totalFlightTime, flightCount, type, nextCheckupHrs, nextCheckupFlights, nextCheckupDate);
+            Glider editedGlider = new Glider(regNum, totalFlightTime, flightCount, type, nextCheckupHrs, nextCheckupFlights, nextCheckupDate, glider.isFlying);
+            gliderService.editGlider(glider, editedGlider);
+            try {
+                List<Flight> oldFlights = flightService.getFlightsByGlider(glider);
+                for(int i = 0; i < oldFlights.size(); i++) {
+                    Flight editedFlight;
+                    editedFlight = new Flight(glider, oldFlights.get(i).getPilot1(), oldFlights.get(i).getPilot2(), oldFlights.get(i).getDate(), oldFlights.get(i).getPointOfDeparture(), oldFlights.get(i).getPointOfArrival(), oldFlights.get(i).getTimeOfDeparture(), oldFlights.get(i).getTimeOfArrival(), oldFlights.get(i).getTask(), oldFlights.get(i).getPreFlightCheckup());
+                    flightService.editFlight(oldFlights.get(i), editedFlight);
+                }
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
             editForm.close();
             UI.getCurrent().getPage().reload();
         });

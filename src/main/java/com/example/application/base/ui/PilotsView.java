@@ -1,5 +1,8 @@
 package com.example.application.base.ui;
 
+import com.example.application.flights.Flight;
+import com.example.application.flights.FlightService;
+import com.example.application.gliders.Glider;
 import com.example.application.pilots.Pilot;
 import com.example.application.pilots.PilotService;
 import com.vaadin.flow.component.UI;
@@ -18,6 +21,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.Route;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.sql.SQLException;
@@ -26,8 +30,10 @@ import java.util.List;
 @Route("building-apps/navigate/pilots")
 public class PilotsView extends VerticalLayout {
     private final PilotService pilotService;
+    private final FlightService flightService;
     @Autowired
-    public PilotsView(PilotService pilotService) {
+    public PilotsView(PilotService pilotService, FlightService flightService) {
+        this.flightService = flightService;
         this.pilotService = pilotService;
         List<Pilot> records = this.pilotService.getAllPilots();
         Grid<Pilot> grid = new Grid<>();
@@ -82,22 +88,29 @@ public class PilotsView extends VerticalLayout {
             if (selectionModel.getSelectedItem().isPresent()) {
                 deletingId = selectionModel.getSelectedItem().get().getId();
                 if (deletingId >= 0) {
-                    //Dialog not working, deletion works
                     ConfirmDialog deleteDialog = new ConfirmDialog();
                     deleteDialog.setHeader("Delete Pilot?");
                     deleteDialog.setText(
-                            "Are you sure you want to permanently delete this item?");
+                            "Are you sure you want to permanently delete this item? This will also delete all flights where it is as Pilot 1");
 
                     deleteDialog.setCancelable(true);
-                    //deleteDialog.addCancelListener(event -> deleteDialog.close());
+                    deleteDialog.addCancelListener(event -> deleteDialog.close());
 
                     deleteDialog.setConfirmText("Delete");
                     deleteDialog.setConfirmButtonTheme("error primary");
-                    deleteDialog.addConfirmListener(event -> pilotService.deletePilot(deletingId));
+                    deleteDialog.addConfirmListener(event -> {
+                        try {
+                            pilotService.deletePilot(deletingId);
+                            flightService.modifyFlightByPilotId(deletingId);
+                            UI.getCurrent().getPage().reload();;
+                        }
+                        catch (SQLException ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    });;
                     deleteDialog.open();
                 }
             }
-            UI.getCurrent().getPage().reload();
         });
         grid.addSelectionListener(e -> {
             deleteButton.setEnabled(true);
@@ -147,6 +160,7 @@ public class PilotsView extends VerticalLayout {
         buttonsLayout.add(searchField, addButton, deleteButton, editButton, testDialogButton);
         add(buttonsLayout, grid);
     }
+
     private void showAdditionForm(PilotService pilotService) throws SQLException {
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
@@ -192,14 +206,32 @@ public class PilotsView extends VerticalLayout {
         Button addButton = new Button("Add", e -> {
             String name = nameField.getValue();
             String licenseNumber = licenseNumberField.getValue();
-            pilotService.addPilot(name, licenseNumber, pilot.isFlying);
+            pilotService.editPilot(pilot, name, licenseNumber, pilot.isFlying);
+            try {
+                List<Flight> oldFlights = flightService.getFlightsByPilot(pilot);
+                for(int i = 0; i < oldFlights.size(); i++) {
+                    Flight editedFlight;
+                    if (oldFlights.get(i).getPilot1().equals(pilot)) {
+                        editedFlight = new Flight(oldFlights.get(i).getGlider(), pilot, oldFlights.get(i).getPilot2(), oldFlights.get(i).getDate(), oldFlights.get(i).getPointOfDeparture(), oldFlights.get(i).getPointOfArrival(), oldFlights.get(i).getTimeOfDeparture(), oldFlights.get(i).getTimeOfArrival(), oldFlights.get(i).getTask(), oldFlights.get(i).getPreFlightCheckup());
+                    } else {
+                        editedFlight = new Flight(oldFlights.get(i).getGlider(), oldFlights.get(i).getPilot1(), pilot, oldFlights.get(i).getDate(), oldFlights.get(i).getPointOfDeparture(), oldFlights.get(i).getPointOfArrival(), oldFlights.get(i).getTimeOfDeparture(), oldFlights.get(i).getTimeOfArrival(), oldFlights.get(i).getTask(), oldFlights.get(i).getPreFlightCheckup());
+                    }
+                    flightService.editFlight(oldFlights.get(i), editedFlight);
+                }
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
             editForm.close();
             UI.getCurrent().getPage().reload();
+            
+
+                
         });
         Button cancelButton = new Button("Cancel", e -> editForm.close());
         editForm.getFooter().add(cancelButton, addButton);
         editForm.add(formLayout);
         editForm.open();
+        
     }
     public static void showView() {
         UI.getCurrent().navigate(PilotsView.class);

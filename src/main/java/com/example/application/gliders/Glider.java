@@ -27,6 +27,17 @@ public class Glider {
     public Glider() {
     }
 
+    public Glider(String registrationNumber, PGInterval totalFlightTime, int flightCount, String type, PGInterval nextCheckupHrs, Integer nextCheckupFlights, Date nextCheckupDate, boolean isFlying) {
+        this.registrationNumber = registrationNumber;
+        this.totalFlightTime = totalFlightTime;
+        this.flightCount = flightCount;
+        this.type = type;
+        this.nextCheckupHrs = nextCheckupHrs;
+        this.nextCheckupFlights = nextCheckupFlights;
+        this.nextCheckupDate = nextCheckupDate;
+        this.isFlying = isFlying;
+    }
+
     public Long getId() {
         return id;
     }

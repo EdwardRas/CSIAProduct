@@ -1,5 +1,7 @@
 package com.example.application.pilots;
 
+import com.example.application.gliders.Glider;
+
 public class Pilot {
     private Long id;
     private String name;
@@ -39,5 +41,18 @@ public class Pilot {
 
     public void setFlying(boolean flying) {
         isFlying = flying;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !getClass().isAssignableFrom(obj.getClass())) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+
+        Glider other = (Glider) obj;
+        return getId() != null && getId().equals(other.getId());
     }
 }
