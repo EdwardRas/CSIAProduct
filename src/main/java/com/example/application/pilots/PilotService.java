@@ -80,36 +80,47 @@ public class PilotService {
             throw new RuntimeException(e);
         }
     }
-    public void editPilot(Pilot pilot, String name, String licenseNumber, boolean isFlying){
-        if(!pilot.getName().equals(name)){
-            String sql = "UPDATE pilots SET name = ? WHERE id = " + pilot.getId();
-            try (Connection conn = dataSource.getConnection()) {
+    public void editPilot(Pilot pilot){
+        String sql = "UPDATE pilots  SET name = ?, license_number = ?, is_flying = ? WHERE id=?";
+        try (Connection conn = dataSource.getConnection()) {
                 PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setString(1, name);
+                ps.setString(1, pilot.getName());
+                ps.setString(2, pilot.getLicenseNumber());
+                ps.setBoolean(3, pilot.isFlying());
+                ps.setLong(4, pilot.getId());
                 ps.execute();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        }
-        if(!pilot.getLicenseNumber().equals(name)){
-            String sql = "UPDATE pilots SET license_number = ? WHERE id = " + pilot.getId();
-            try (Connection conn = dataSource.getConnection()) {
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setString(1, licenseNumber);
-                ps.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        if (pilot.isFlying !=  isFlying){
-            String sql = "UPDATE pilots SET is_flying = ? WHERE id = " + pilot.getId();
-            try (Connection conn = dataSource.getConnection()) {
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setBoolean(1, isFlying);
-                ps.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
+//        if(!pilot.getName().equals(name)){
+//            String sql = "UPDATE pilots SET name = ? WHERE id = " + pilot.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setString(1, name);
+//                ps.execute();
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        if(!pilot.getLicenseNumber().equals(name)){
+//            String sql = "UPDATE pilots SET license_number = ? WHERE id = " + pilot.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setString(1, licenseNumber);
+//                ps.execute();
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        if (pilot.isFlying !=  isFlying){
+//            String sql = "UPDATE pilots SET is_flying = ? WHERE id = " + pilot.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setBoolean(1, isFlying);
+//                ps.execute();
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
     }
 }

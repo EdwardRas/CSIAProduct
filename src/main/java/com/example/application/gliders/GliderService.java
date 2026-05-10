@@ -97,7 +97,7 @@ public class GliderService {
         }
     }
 
-    public void editGlider(Glider glider, Glider editedGlider) {
+    public void editGlider(Glider editedGlider) {
         String regNum = editedGlider.getRegistrationNumber();
         PGInterval totalFlightTime = editedGlider.getTotalFlightTime();
         int flightCount = editedGlider.getFlightCount();
@@ -106,126 +106,143 @@ public class GliderService {
         Integer nextCheckupFlights = editedGlider.getNextCheckupFlights();
         Date nextCheckupDate = editedGlider.getNextCheckupDate();
         boolean isFlying = editedGlider.isFlying;
-        if (!glider.getRegistrationNumber().equals(regNum)) {
-            String sql = "UPDATE gliders SET reg_number = ? WHERE id = " + glider.getId();
-            try (Connection conn = dataSource.getConnection()) {
+
+        String sql = "UPDATE gliders SET reg_number = ?, total_flight_time = ?, flight_count = ?, type = ?, next_checkup_hrs = ?, next_checkup_flights = ?, next_checkup_deadline = ?, is_flying = ? WHERE id = " + editedGlider.getId();
+        try (Connection conn = dataSource.getConnection()) {
                 PreparedStatement ps = conn.prepareStatement(sql);
                 ps.setString(1, regNum);
+                ps.setObject(2, totalFlightTime);
+                ps.setInt(3, flightCount);
+                ps.setString(4, type);
+                ps.setObject(5, nextCheckupHrs);
+                ps.setObject(6, nextCheckupFlights);
+                ps.setObject(7, nextCheckupDate);
+                ps.setBoolean(8, isFlying);
                 ps.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
         }
-        if (!glider.getTotalFlightTime().equals(totalFlightTime)) {
-            String sql = "UPDATE gliders SET total_flight_time = ? WHERE id = " + glider.getId();
-            try (Connection conn = dataSource.getConnection()) {
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setObject(1, totalFlightTime);
-                ps.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-        if (glider.getFlightCount() != flightCount) {
-            String sql = "UPDATE gliders SET flight_count = ? WHERE id = " + glider.getId();
-            try (Connection conn = dataSource.getConnection()) {
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setInt(1, flightCount);
-                ps.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        if (!glider.getType().equals(type)) {
-            String sql = "UPDATE gliders SET type = ? WHERE id = " + glider.getId();
-            try (Connection conn = dataSource.getConnection()) {
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setString(1, type);
-                ps.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        if (glider.getNextCheckupHrs() != null) {
-            if (!glider.getNextCheckupHrs().equals(nextCheckupHrs)) {
-                String sql = "UPDATE gliders SET next_checkup_hrs = ? WHERE id = " + glider.getId();
-                try (Connection conn = dataSource.getConnection()) {
-                    PreparedStatement ps = conn.prepareStatement(sql);
-                    ps.setObject(1, nextCheckupHrs);
-                    ps.execute();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if (glider.getNextCheckupHrs() == null && nextCheckupHrs != null) {
-            if (!nextCheckupHrs.equals(glider.getNextCheckupHrs())) {
-                String sql = "UPDATE gliders SET next_checkup_hrs = ? WHERE id = " + glider.getId();
-                try (Connection conn = dataSource.getConnection()) {
-                    PreparedStatement ps = conn.prepareStatement(sql);
-                    ps.setObject(1, nextCheckupHrs);
-                    ps.execute();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if (glider.getNextCheckupFlights() != null) {
-            if (!glider.getNextCheckupFlights().equals(nextCheckupFlights)) {
-                String sql = "UPDATE gliders SET next_checkup_flights = ? WHERE id = " + glider.getId();
-                try (Connection conn = dataSource.getConnection()) {
-                    PreparedStatement ps = conn.prepareStatement(sql);
-                    ps.setObject(1, nextCheckupFlights, java.sql.Types.INTEGER);
-                    ps.execute();
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-        if(glider.getNextCheckupFlights() == null && nextCheckupFlights != null){
-            String sql = "UPDATE gliders SET next_checkup_flights = ? WHERE id = " + glider.getId();
-            try (Connection conn = dataSource.getConnection()) {
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setObject(1, nextCheckupFlights, java.sql.Types.INTEGER);
-                ps.execute();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        if (glider.getNextCheckupDate() != null) {
-            if (!glider.getNextCheckupDate().equals(nextCheckupDate)) {
-                String sql = "UPDATE gliders SET next_checkup_deadline = ? WHERE id = " + glider.getId();
-                 try (Connection conn = dataSource.getConnection()) {
-                     PreparedStatement ps = conn.prepareStatement(sql);
-                     ps.setDate(1, nextCheckupDate);
-                     ps.execute();
-                    }
-                 catch (SQLException e) {
-                     throw new RuntimeException(e);
-                 }
-            }
-        }
-        if(glider.getNextCheckupDate() == null && nextCheckupDate != null){
-            String sql = "UPDATE gliders SET next_checkup_deadline = ? WHERE id = " + glider.getId();
-            try (Connection conn = dataSource.getConnection()) {
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setDate(1, nextCheckupDate);
-                ps.execute();
-            }
-            catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        if(glider.isFlying != isFlying){
-            String sql = "UPDATE gliders SET is_flying = ? WHERE id = " + glider.getId();
-            try (Connection conn = dataSource.getConnection()) {
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setBoolean(1, isFlying);
-                ps.execute();
-            }
-            catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        //        if (!glider.getRegistrationNumber().equals(regNum)) {
+//            String sql = "UPDATE gliders SET reg_number = ? WHERE id = " + glider.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setString(1, regNum);
+//                ps.execute();
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        if (!glider.getTotalFlightTime().equals(totalFlightTime)) {
+//            String sql = "UPDATE gliders SET total_flight_time = ? WHERE id = " + glider.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setObject(1, totalFlightTime);
+//                ps.execute();
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        if (glider.getFlightCount() != flightCount) {
+//            String sql = "UPDATE gliders SET flight_count = ? WHERE id = " + glider.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setInt(1, flightCount);
+//                ps.execute();
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        if (!glider.getType().equals(type)) {
+//            String sql = "UPDATE gliders SET type = ? WHERE id = " + glider.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setString(1, type);
+//                ps.execute();
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        if (glider.getNextCheckupHrs() != null) {
+//            if (!glider.getNextCheckupHrs().equals(nextCheckupHrs)) {
+//                String sql = "UPDATE gliders SET next_checkup_hrs = ? WHERE id = " + glider.getId();
+//                try (Connection conn = dataSource.getConnection()) {
+//                    PreparedStatement ps = conn.prepareStatement(sql);
+//                    ps.setObject(1, nextCheckupHrs);
+//                    ps.execute();
+//                } catch (SQLException e) {
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//        }
+//        if (glider.getNextCheckupHrs() == null && nextCheckupHrs != null) {
+//            if (!nextCheckupHrs.equals(glider.getNextCheckupHrs())) {
+//                String sql = "UPDATE gliders SET next_checkup_hrs = ? WHERE id = " + glider.getId();
+//                try (Connection conn = dataSource.getConnection()) {
+//                    PreparedStatement ps = conn.prepareStatement(sql);
+//                    ps.setObject(1, nextCheckupHrs);
+//                    ps.execute();
+//                } catch (SQLException e) {
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//        }
+//        if (glider.getNextCheckupFlights() != null) {
+//            if (!glider.getNextCheckupFlights().equals(nextCheckupFlights)) {
+//                String sql = "UPDATE gliders SET next_checkup_flights = ? WHERE id = " + glider.getId();
+//                try (Connection conn = dataSource.getConnection()) {
+//                    PreparedStatement ps = conn.prepareStatement(sql);
+//                    ps.setObject(1, nextCheckupFlights, java.sql.Types.INTEGER);
+//                    ps.execute();
+//                } catch (SQLException e) {
+//                    throw new RuntimeException(e);
+//                }
+//            }
+//        }
+//        if(glider.getNextCheckupFlights() == null && nextCheckupFlights != null){
+//            String sql = "UPDATE gliders SET next_checkup_flights = ? WHERE id = " + glider.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setObject(1, nextCheckupFlights, java.sql.Types.INTEGER);
+//                ps.execute();
+//            } catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        if (glider.getNextCheckupDate() != null) {
+//            if (!glider.getNextCheckupDate().equals(nextCheckupDate)) {
+//                String sql = "UPDATE gliders SET next_checkup_deadline = ? WHERE id = " + glider.getId();
+//                 try (Connection conn = dataSource.getConnection()) {
+//                     PreparedStatement ps = conn.prepareStatement(sql);
+//                     ps.setDate(1, nextCheckupDate);
+//                     ps.execute();
+//                    }
+//                 catch (SQLException e) {
+//                     throw new RuntimeException(e);
+//                 }
+//            }
+//        }
+//        if(glider.getNextCheckupDate() == null && nextCheckupDate != null){
+//            String sql = "UPDATE gliders SET next_checkup_deadline = ? WHERE id = " + glider.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setDate(1, nextCheckupDate);
+//                ps.execute();
+//            }
+//            catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//        if(glider.isFlying != isFlying){
+//            String sql = "UPDATE gliders SET is_flying = ? WHERE id = " + glider.getId();
+//            try (Connection conn = dataSource.getConnection()) {
+//                PreparedStatement ps = conn.prepareStatement(sql);
+//                ps.setBoolean(1, isFlying);
+//                ps.execute();
+//            }
+//            catch (SQLException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
     }
 }

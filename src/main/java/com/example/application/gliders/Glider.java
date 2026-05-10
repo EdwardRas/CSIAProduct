@@ -112,7 +112,7 @@ public class Glider {
         }
 
         Glider other = (Glider) obj;
-        return getId() != null && getId().equals(other.getId());
+        return getRegistrationNumber() != null && getRegistrationNumber().equals(other.getRegistrationNumber());
     }
 
     @Override

@@ -132,7 +132,7 @@ public class FlightService {
             throw new RuntimeException(e);
         }
     }
-
+    //TODO zmienic na jedno Flightowe, jedno sqlowe
     public void editFlight(Flight flight, Flight editedFlight) {
         Glider glider = editedFlight.getGlider();
         Pilot pilot1 = editedFlight.getPilot1();

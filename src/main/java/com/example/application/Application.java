@@ -27,7 +27,7 @@ import java.util.Properties;
 @StyleSheet("styles.css") // Your custom styles
 public class Application implements AppShellConfigurator {
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
     }
 }

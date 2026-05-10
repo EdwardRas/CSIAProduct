@@ -2,6 +2,7 @@ package com.example.application.flights;
 
 import com.example.application.gliders.Glider;
 import com.example.application.pilots.Pilot;
+import jakarta.annotation.Nullable;
 import org.postgresql.util.PGInterval;
 
 import java.sql.Date;
@@ -32,7 +33,7 @@ public class Flight {
     public void setPilot1(Pilot pilot1) {
         this.pilot1 = pilot1;
     }
-
+    @Nullable
     public Pilot getPilot2() {
         return pilot2;
     }
@@ -294,8 +295,10 @@ public class Flight {
     }
     public String checkNextCheckup(){
         String output = null;
-        if (glider.getNextCheckupHrs().getHours() < glider.getTotalFlightTime().getHours() || (glider.getNextCheckupHrs().getHours() == glider.getTotalFlightTime().getHours()) && glider.getNextCheckupHrs().getMinutes() < glider.getTotalFlightTime().getMinutes()) {
-            output = "This glider is overdue for a checkup in terms of flight hours";
+        if(glider.getNextCheckupHrs() != null){
+            if (glider.getNextCheckupHrs().getHours() < glider.getTotalFlightTime().getHours() || (glider.getNextCheckupHrs().getHours() == glider.getTotalFlightTime().getHours()) && glider.getNextCheckupHrs().getMinutes() < glider.getTotalFlightTime().getMinutes()) {
+                output = "This glider is overdue for a checkup in terms of flight hours";
+            }
         }
         else if(isArchival) {
             if (glider.getNextCheckupHrs() != null) {

@@ -52,7 +52,7 @@ public class Pilot {
             return true;
         }
 
-        Glider other = (Glider) obj;
-        return getId() != null && getId().equals(other.getId());
+        Pilot other = (Pilot) obj;
+        return getName() != null && getName().equals(other.getName());
     }
 }

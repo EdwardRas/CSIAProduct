@@ -211,9 +211,9 @@ public class PilotsView extends VerticalLayout {
         formLayout.addFormRow(nameField);
         formLayout.addFormRow(licenseNumberField);
         Button addButton = new Button("Add", e -> {
-            String name = nameField.getValue();
-            String licenseNumber = licenseNumberField.getValue();
-            pilotService.editPilot(pilot, name, licenseNumber, pilot.isFlying);
+            pilot.setName(nameField.getValue());
+            pilot.setLicenseNumber(licenseNumberField.getValue());
+            pilotService.editPilot(pilot);
             try {
                 List<Flight> oldFlights = flightService.getFlightsByPilot(pilot);
                 for(int i = 0; i < oldFlights.size(); i++) {

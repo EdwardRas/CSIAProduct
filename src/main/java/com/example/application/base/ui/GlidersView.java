@@ -381,8 +381,15 @@ public class GlidersView extends VerticalLayout {
             if(nextCheckupDateField.getValue() != null) {
                 nextCheckupDate = Date.valueOf(nextCheckupDateField.getValue());
             }
-            Glider editedGlider = new Glider(regNum, totalFlightTime, flightCount, type, nextCheckupHrs, nextCheckupFlights, nextCheckupDate, glider.isFlying);
-            gliderService.editGlider(glider, editedGlider);
+            glider.setRegistrationNumber(regNum);
+            glider.setTotalFlightTime(totalFlightTime);
+            glider.setType(type);
+            glider.setFlightCount(flightCount);
+            glider.setNextCheckupHrs(nextCheckupHrs);
+            glider.setNextCheckupFlights(nextCheckupFlights);
+            glider.setNextCheckupDate(nextCheckupDate);
+
+            gliderService.editGlider(glider);
             try {
                 List<Flight> oldFlights = flightService.getFlightsByGlider(glider);
                 for(int i = 0; i < oldFlights.size(); i++) {
