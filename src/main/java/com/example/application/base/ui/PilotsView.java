@@ -16,6 +16,7 @@ import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -59,6 +60,8 @@ public class PilotsView extends VerticalLayout {
             try {
                 showAdditionForm(pilotService);
             } catch (SQLException ex) {
+                Notification notification = Notification
+                        .show("Error: " + ex.getErrorCode());
                 throw new RuntimeException(ex);
             }
         });
@@ -105,6 +108,8 @@ public class PilotsView extends VerticalLayout {
                             UI.getCurrent().getPage().reload();;
                         }
                         catch (SQLException ex) {
+                            Notification notification = Notification
+                                    .show("Error: " + ex.getErrorCode());
                             throw new RuntimeException(ex);
                         }
                     });;
@@ -123,6 +128,8 @@ public class PilotsView extends VerticalLayout {
                 try {
                     showEditForm(pilotService, selectionModel.getSelectedItem().get());
                 } catch (SQLException ex) {
+                    Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode());
                     throw new RuntimeException(ex);
                 }
             }
@@ -219,6 +226,8 @@ public class PilotsView extends VerticalLayout {
                     flightService.editFlight(oldFlights.get(i), editedFlight);
                 }
             } catch (SQLException ex) {
+                Notification notification = Notification
+                        .show("Error: " + ex.getErrorCode());
                 throw new RuntimeException(ex);
             }
             editForm.close();

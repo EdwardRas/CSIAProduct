@@ -249,7 +249,7 @@ public class FlightService {
                 }
             }
         }
-        if ((flight.getTimeOfArrival() == null && timeOfArrival != null) || !flight.getTimeOfArrival().equals(timeOfArrival)) {
+        if (flight.getTimeOfArrival() == null && timeOfArrival != null) {
             String sql = "UPDATE flights SET status = ?, time_of_arrival = ?, time_of_departure = ? WHERE id = " + flight.getId();
             try (Connection conn = dataSource.getConnection()) {
                 PreparedStatement ps = conn.prepareStatement(sql);
@@ -273,7 +273,7 @@ public class FlightService {
                     minutes = String.valueOf(timeOfArrival.getMinutes() - timeOfDeparture.getMinutes());
                 }
                 PreparedStatement ps = conn.prepareStatement(sql);
-                ps.setObject(1, hours + " hours " +  minutes + " minutes");
+                ps.setObject(1, new PGInterval(hours + " hours " +  minutes + " minutes"));
                 ps.execute();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -446,7 +446,7 @@ public class FlightService {
     }
     public List<Flight> getArchivalFlightsByGliderAndDate(Glider glider, Date date) throws SQLException {
         List<Flight> flights = new ArrayList<>();
-        String sql = "SELECT * FROM flights WHERE (glider_id = ? AND date = ? AND status = archival)";
+        String sql = "SELECT * FROM flights WHERE (glider_id = ? AND date = ? AND status = 'archival')";
         try (Connection conn = dataSource.getConnection()) {
             Flight flight = new Flight();
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -488,7 +488,7 @@ public class FlightService {
     }
     public List<Flight> getArchivalFlightsByPilotAndDate(Pilot pilot, Date date) throws SQLException {
         List<Flight> flights = new ArrayList<>();
-        String sql = "SELECT * FROM flights WHERE ((pilot_1_id = ? OR pilot_2_id = ?) AND date = ? and status = archival)";
+        String sql = "SELECT * FROM flights WHERE ((pilot_1_id = ? OR pilot_2_id = ?) AND date = ? and status = 'archival')";
         try (Connection conn = dataSource.getConnection()) {
             Flight flight = new Flight();
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -556,6 +556,45 @@ public class FlightService {
         } catch (SQLException e) {
             throw new RuntimeException(e);
         };
+    }
+    public Flight getFlightById(long id) throws SQLException {
+        String sql = "SELECT * FROM flights WHERE id=?";
+        Flight flight = new Flight();
+        try (Connection conn = dataSource.getConnection()) {
+            PreparedStatement st = conn.prepareStatement(sql);
+            st.setLong(1, id);
+            ResultSet rs = st.executeQuery();
+            while (rs.next()) {
+                flight.setId(rs.getLong("id"));
+                flight.setPilot1(pilotService.findPilot(rs.getLong("pilot_1_id")));
+                flight.setPilot2(pilotService.findPilot(rs.getLong("pilot_2_id")));
+                flight.setGlider(gliderService.getGliderById(rs.getLong("glider_id")));
+                String status = rs.getString("status");
+                if (status.equals("premade")) {
+                    flight.isActive = false;
+                    flight.isArchival = false;
+                } else if (status.equals("active")) {
+                    flight.isActive = true;
+                    flight.isArchival = false;
+                } else if (status.equals("archival")) {
+                    flight.isArchival = true;
+                    flight.isActive = false;
+                }
+                flight.setDate(rs.getDate("date"));
+                flight.setPointOfDeparture(rs.getString("point_of_departure"));
+                flight.setPointOfArrival(rs.getString("point_of_arrival"));
+                if(!status.equals("premade")){
+                    flight.setTimeOfDeparture(rs.getTime("time_of_departure"));
+                    if(status.equals("archival")){
+                        flight.setTimeOfArrival(rs.getTime("time_of_arrival"));
+                    }
+                }
+                flight.setFlightTime((org.postgresql.util.PGInterval) rs.getObject("flight_duration"));
+                flight.setTask(rs.getString("task"));
+                flight.setPreFlightCheckup(rs.getString("pre_flight_checkup"));
+            }
+        }
+        return flight;
     }
 }
 

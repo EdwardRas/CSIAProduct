@@ -18,10 +18,13 @@ import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
+import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.data.value.ValueChangeMode;
@@ -33,8 +36,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
-import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Route("building-apps/navigate/flights")
@@ -48,6 +51,7 @@ public class FlightsView extends VerticalLayout {
     public boolean isArchivalFilter = false;
     private Pilot pilot1Filter;
     private Pilot pilot2Filter;
+    private Pilot anyPilotFilter;
     private Date dateFilter;
     private String pointOfDepartureFilter;
     private String pointOfArrivalFilter;
@@ -118,8 +122,10 @@ public class FlightsView extends VerticalLayout {
 
         Button addButton = new Button("Add Flight", e -> {
             try {
-                showAdditionForm(gliderService, pilotService);
+                showAdditionForm(gliderService, pilotService, dataView);
             } catch (SQLException ex) {
+                Notification notification = Notification
+                        .show("Error: " + ex.getErrorCode());
                 throw new RuntimeException(ex);
             }
         });
@@ -131,7 +137,7 @@ public class FlightsView extends VerticalLayout {
             if (selectionModel.getSelectedItem().isPresent()) {
                 deletingId = selectionModel.getSelectedItem().get().getId();
                 if (deletingId >= 0) {
-                    ConfirmDialog deleteDialog = getDeleteDialog(flightService, selectionModel.getSelectedItem().get().getId());
+                    ConfirmDialog deleteDialog = getDeleteDialog(flightService, selectionModel.getSelectedItem().get().getId(), gliderService);
                     deleteDialog.open();
                 }
             }
@@ -148,21 +154,69 @@ public class FlightsView extends VerticalLayout {
                 try {
                     showEditForm(gliderService, pilotService, selectionModel.getSelectedItem().get());
                 } catch (SQLException ex) {
+                    Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode()); notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                     throw new RuntimeException(ex);
                 }
             }
         });
+        Button launchButton = new Button("Launch", e -> {
+            if(selectionModel.getSelectedItem().isPresent() && !(selectionModel.getSelectedItem().get().isActive || selectionModel.getSelectedItem().get().isArchival)){
+                Flight flight = selectionModel.getSelectedItem().get();
+                Glider glider =  selectionModel.getSelectedItem().get().getGlider();
+                Pilot pilot1 =  selectionModel.getSelectedItem().get().getPilot1();
+                Pilot pilot2 =  selectionModel.getSelectedItem().get().getPilot2();
+                Date date =  selectionModel.getSelectedItem().get().getDate();
+                String pointOfDeparture = selectionModel.getSelectedItem().get().getPointOfDeparture();
+                String pointOfArrival = selectionModel.getSelectedItem().get().getPointOfArrival();
+                LocalTime timeOfDeparture = LocalTime.now(ZoneId.of("UTC"));
+                LocalTime timeOfArrival = null;
+                String task = selectionModel.getSelectedItem().get().getTask();
+                String preFlightCheckup = selectionModel.getSelectedItem().get().getPreFlightCheckup();
+                editFlightLogic(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, timeOfDeparture,  timeOfArrival, task, preFlightCheckup);
+            }
+        });
+        Button landButton = new Button("Land", e -> {
+            if(selectionModel.getSelectedItem().isPresent() && selectionModel.getSelectedItem().get().isActive){
+                Flight flight = selectionModel.getSelectedItem().get();
+                Glider glider =  selectionModel.getSelectedItem().get().getGlider();
+                Pilot pilot1 =  selectionModel.getSelectedItem().get().getPilot1();
+                Pilot pilot2 =  selectionModel.getSelectedItem().get().getPilot2();
+                Date date =  selectionModel.getSelectedItem().get().getDate();
+                String pointOfDeparture = selectionModel.getSelectedItem().get().getPointOfDeparture();
+                String pointOfArrival = selectionModel.getSelectedItem().get().getPointOfArrival();
+                LocalTime timeOfDeparture = flight.getTimeOfDeparture().toLocalTime();
+                LocalTime timeOfArrival = LocalTime.now(ZoneId.of("UTC"));
+                String task = selectionModel.getSelectedItem().get().getTask();
+                String preFlightCheckup = selectionModel.getSelectedItem().get().getPreFlightCheckup();
+                editFlightLogic(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, timeOfDeparture,  timeOfArrival, task, preFlightCheckup);
+                UI.getCurrent().getPage().reload();
+            }
+        });
+        Button filterButton = new Button("Filter", e -> showFilterForm(dataView));
         grid.addSelectionListener(e -> {
             deleteButton.setEnabled(true);
             editButton.setEnabled(true);
+            if(e.getFirstSelectedItem().isPresent()) {
+                if (!(selectionModel.getSelectedItem().get().isActive || selectionModel.getSelectedItem().get().isArchival)) {
+                    launchButton.setEnabled(true);
+                }
+                if (selectionModel.getSelectedItem().get().isActive) {
+                    landButton.setEnabled(true);
+                }
+            }
             if(e.getFirstSelectedItem().isEmpty()){
                 deleteButton.setEnabled(false);
                 editButton.setEnabled(false);
+                launchButton.setEnabled(false);
+                landButton.setEnabled(false);
             }
         });
 
         deleteButton.setEnabled(false);
         editButton.setEnabled(false);
+        launchButton.setEnabled(false);
+        landButton.setEnabled(false);
 
         Tab premade = new Tab("Pre-Made");
         Tab active = new Tab("Active");
@@ -174,20 +228,18 @@ public class FlightsView extends VerticalLayout {
                 //set global filters
                 isActiveFilter = false;
                 isArchivalFilter = false;
-                dataView.refreshAll();
             }
             else if (tabs.getSelectedTab() == active) {
                 //set global filters
                 isActiveFilter = true;
                 isArchivalFilter = false;
-                dataView.refreshAll();
             }
             if (tabs.getSelectedTab() == archival) {
                 //set global filters
                 isActiveFilter = false;
                 isArchivalFilter = true;
-                dataView.refreshAll();
             }
+            dataView.refreshAll();
         });
         TextField searchField = new TextField();
         searchField.setWidth("250px");
@@ -199,24 +251,39 @@ public class FlightsView extends VerticalLayout {
         dataView.addFilter(item -> {
             String searchTerm = searchField.getValue().trim();
             //Search Field handling
-            if (searchTerm.isEmpty()){
-                return true;
+            boolean matchesID = true;
+            boolean matchesGlider = true;
+            boolean matchesPilot1 = true;
+            boolean matchesPilot2 = true;
+            boolean matchesDate = true;
+            boolean matchesPointOfDeparture = true;
+            boolean matchesPointOfArrival = true;
+            boolean matchesTimeOfArrival = true;
+            boolean matchesTimeOfDeparture = true;
+            boolean matchesFlightDuration = true;
+            boolean matchesTask = true;
+            boolean matchesPreFlightCheckup = true;
+            if (!searchTerm.isEmpty()) {
+                matchesID = String.valueOf(item.getId()).equals(searchTerm);
+                matchesDate = String.valueOf(item.getDate()).contains(searchTerm);
+                matchesGlider = item.getGlider().getRegistrationNumber().contains(searchTerm);
+                matchesPilot1 = item.getPilot1().getName().contains(searchTerm);
+                matchesPilot2 = false;
+                if (item.getPilot2() != null) {
+                    matchesPilot2 = item.getPilot2().getName().contains(searchTerm);
+                }
+                matchesPointOfDeparture = item.getPointOfDeparture().contains(searchTerm);
+                matchesPointOfArrival = item.getPointOfArrival().contains(searchTerm);
+                if(item.getTimeOfDeparture() != null) {
+                    matchesTimeOfDeparture = String.valueOf(item.getTimeOfDeparture()).contains(searchTerm);
+                    if(item.getTimeOfArrival() != null) {
+                        matchesTimeOfArrival = String.valueOf(item.getTimeOfArrival()).contains(searchTerm);
+                    }
+                }
+                matchesFlightDuration = String.valueOf(item.getFlightTime()).contains(searchTerm);
+                matchesTask = item.getTask().contains(searchTerm);
+                matchesPreFlightCheckup = item.getPreFlightCheckup().contains(searchTerm);
             }
-            boolean matchesID = String.valueOf(item.getId()).equals(searchTerm);
-            boolean matchesDate = String.valueOf(item.getDate()).contains(searchTerm);
-            boolean matchesGlider = item.getGlider().getRegistrationNumber().contains(searchTerm);
-            boolean matchesPilot1 = item.getPilot1().getName().contains(searchTerm);
-            boolean matchesPilot2 = false;
-            if(item.getPilot2() != null) {
-                matchesPilot2 = item.getPilot2().getName().contains(searchTerm);
-            }
-            boolean matchesPointOfDeparture = item.getPointOfDeparture().contains(searchTerm);
-            boolean matchesPointOfArrival = item.getPointOfArrival().contains(searchTerm);
-            boolean matchesTimeOfArrival = String.valueOf(item.getTimeOfArrival()).contains(searchTerm);
-            boolean matchesTimeOfDeparture = String.valueOf(item.getTimeOfDeparture()).contains(searchTerm);
-            boolean matchesFlightDuration = String.valueOf(item.getFlightTime()).contains(searchTerm);
-            boolean matchesTask =  item.getTask().contains(searchTerm);
-            boolean matchesPreFlightCheckup = item.getPreFlightCheckup().contains(searchTerm);
             //Filter functionality
             boolean matchesFilter = (item.isActive == isActiveFilter) && (item.isArchival ==  isArchivalFilter);
             //pilot1Filter
@@ -226,6 +293,10 @@ public class FlightsView extends VerticalLayout {
             //pilot2Filter;
             if(pilot2Filter != null){
                 matchesFilter = matchesFilter && pilot2Filter.equals(item.getPilot2());
+            }
+            //anyPilotFilter
+            if(anyPilotFilter != null){
+                matchesFilter = matchesFilter && (anyPilotFilter.equals(item.getPilot1()) || anyPilotFilter.equals(item.getPilot2()));
             }
             //dateFilter
             if (dateFilter != null) {
@@ -271,12 +342,12 @@ public class FlightsView extends VerticalLayout {
         buttonsLayout.setSizeFull();
         buttonsLayout.add(new Button("Gliders", e -> GlidersView.showView()));
         buttonsLayout.add(new Button("Pilots", e -> PilotsView.showView()));
-        buttonsLayout.add(searchField, addButton, deleteButton, editButton);
+        buttonsLayout.add(addButton, deleteButton, editButton, searchField, filterButton, launchButton, landButton);
         add(buttonsLayout, tabs, grid);
 
     }
 
-    private static @NonNull ConfirmDialog getDeleteDialog(FlightService flightService, Long deletingId) {
+    private static @NonNull ConfirmDialog getDeleteDialog(FlightService flightService, Long deletingId, GliderService gliderService) {
         ConfirmDialog deleteDialog = new ConfirmDialog();
         deleteDialog.setHeader("Delete Flight?");
         deleteDialog.setText("Are you sure you want to permanently delete this item?");
@@ -286,13 +357,32 @@ public class FlightsView extends VerticalLayout {
         deleteDialog.setConfirmText("Delete");
         deleteDialog.setConfirmButtonTheme("error primary");
         deleteDialog.addConfirmListener(event -> {
+            try {
+                if(flightService.getFlightById(deletingId).isArchival){
+                    Flight flight = flightService.getFlightById(deletingId);
+                    Glider glider = flight.getGlider();
+                    Glider editedGlider = glider;
+                    if(editedGlider.getTotalFlightTime().getMinutes() - flight.getFlightTime().getMinutes() < 0) {
+                        editedGlider.setTotalFlightTime(new PGInterval((editedGlider.getTotalFlightTime().getHours() - flight.getFlightTime().getHours() - 1) + " hours " + (flight.getFlightTime().getMinutes() - editedGlider.getTotalFlightTime().getMinutes()) + " minutes"));
+                    }
+                    else{
+                        editedGlider.setTotalFlightTime(new PGInterval((editedGlider.getTotalFlightTime().getHours() - flight.getFlightTime().getHours()) + " hours " + (editedGlider.getTotalFlightTime().getMinutes() - flight.getFlightTime().getMinutes()) + " minutes"));
+                    }
+                    editedGlider.setFlightCount(editedGlider.getFlightCount() - 1);
+                    gliderService.editGlider(glider, editedGlider);
+                }
+            } catch (SQLException e) {
+                Notification notification = Notification
+                        .show("Error: " + e.getErrorCode());
+                throw new RuntimeException(e);
+            }
             flightService.deleteFlight(deletingId);
             UI.getCurrent().getPage().reload();
         });
         return deleteDialog;
     }
 
-    private void showAdditionForm(GliderService gliderService, PilotService pilotService) throws SQLException {
+    private void showAdditionForm(GliderService gliderService, PilotService pilotService, GridListDataView dataView) throws SQLException {
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -389,6 +479,8 @@ public class FlightsView extends VerticalLayout {
                 try {
                     flightDuration = new PGInterval(hours + " hours " + minutes + " minutes");
                 } catch (SQLException ex) {
+                    Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode()); notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                     throw new RuntimeException(ex);
                 }
             }
@@ -397,31 +489,91 @@ public class FlightsView extends VerticalLayout {
             String pointOfDeparture = pointOfDepartureField.getValue();
             String task = taskField.getValue();
             String preFlightCheckup = preFlightCheckupField.getValue();
-            Flight flight = new Flight(glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, Time.valueOf(timeOfDeparture), Time.valueOf(timeOfArrival), task, preFlightCheckup);
+            Time sqlTimeOfDeparture = null;
+            if(timeOfDeparture != null){
+                sqlTimeOfDeparture = Time.valueOf(timeOfDeparture);
+            }
+            Time sqlTimeOfArrival = null;
+            if(timeOfArrival != null){
+                sqlTimeOfArrival = Time.valueOf(timeOfArrival);
+            }
+            Flight flight = new Flight(glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, sqlTimeOfDeparture, sqlTimeOfArrival, task, preFlightCheckup);
             flight.isActive = isActive;
             flight.isArchival = isArchival;
-            try {
-                if(flight.validateAddition(flightService.getArchivalFlightsByGliderAndDate(glider, date), flightService.getArchivalFlightsByPilotAndDate(pilot1, date), flightService.getArchivalFlightsByPilotAndDate(pilot2, date))) {
-                    flightService.addFlight(flight);
-                }
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
+            if(isArchival) {
+                flight.setFlightTime(flightDuration);
             }
-            try {
-                if(flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() < 60) {
-                    Glider editGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours()) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes()) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
-                    gliderService.editGlider(glider, editGlider);
+            try{
+                List<Flight> filteredByGlider = flightService.getArchivalFlightsByGliderAndDate(glider, date);
+                List<Flight> filteredByPilot1 = flightService.getArchivalFlightsByPilotAndDate(pilot1, date);
+                List<Flight> filteredByPilot2 = null;
+                if (pilot2 != null){
+                    filteredByPilot2 = flightService.getArchivalFlightsByPilotAndDate(pilot2, date);
+                }
+                if(flight.validateAddition(filteredByGlider, filteredByPilot1, filteredByPilot2)) {
+                    String checkupChecker = flight.checkNextCheckup();
+                    if (checkupChecker == null) {
+                        flightService.addFlight(flight);
+                        if(isArchival) {
+                            try {
+                                if (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() < 60) {
+                                    Glider editGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours()) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes()) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
+                                    gliderService.editGlider(glider, editGlider);
+                                } else {
+                                    Glider editGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() + 1) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - 60) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
+                                    gliderService.editGlider(glider, editGlider);
+                                }
+                            } catch (SQLException ex) {
+                                Notification notification = Notification
+                                        .show("Error: " + ex.getErrorCode()); notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+                                throw new RuntimeException(ex);
+                            }
+                        }
+                    }
+                    else {
+                        if (!checkupChecker.contains("overdue")) {
+                            flightService.addFlight(flight);
+                            if (checkupChecker != null) {
+                                Notification notification = Notification.show(checkupChecker);
+                                notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
+                            }
+                            if(isArchival) {
+                                try {
+                                    if (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() < 60) {
+                                        Glider editGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours()) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes()) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
+                                        editGlider.setFlightCount(glider.getFlightCount() + 1);
+                                        gliderService.editGlider(glider, editGlider);
+                                    } else {
+                                        Glider editGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() + 1) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - 60) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
+                                        editGlider.setFlightCount(glider.getFlightCount() + 1);
+                                        gliderService.editGlider(glider, editGlider);
+                                    }
+                                } catch (SQLException ex) {
+                                    Notification notification = Notification
+                                            .show("Error: " + ex.getErrorCode()); notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+                                    throw new RuntimeException(ex);
+                                }
+                            }
+                        } else {
+                            Notification notification = Notification.show(checkupChecker);
+                            notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+                        }
+                    }
+                    additionForm.close();
+                    dataView.refreshAll();
                 }
                 else{
-                    Glider editGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() + 1) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - 60) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
-                    gliderService.editGlider(glider, editGlider);
+                    Notification notification = Notification
+                            .show("The submitted record conflicts with at least one preexisting record");
+                    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                 }
             }
             catch (SQLException ex) {
+                Notification notification = Notification
+                        .show("Error: " + ex.getErrorCode());
                 throw new RuntimeException(ex);
             }
-            additionForm.close();
-            UI.getCurrent().getPage().reload();
+
         });
         Button cancelButton = new Button("Cancel", e -> additionForm.close());
         additionForm.getFooter().add(cancelButton, addButton);
@@ -454,10 +606,14 @@ public class FlightsView extends VerticalLayout {
         pilot2Field.setItemLabelGenerator(Pilot::getName);
         TimePicker timeOfDeparturePicker = new TimePicker();
         timeOfDeparturePicker.setLabel("Time of departure (UTC)");
-        timeOfDeparturePicker.setValue(LocalTime.of(flight.getTimeOfDeparture().getHours(), flight.getTimeOfDeparture().getMinutes()));
+        if(flight.getTimeOfDeparture()!=null) {
+            timeOfDeparturePicker.setValue(LocalTime.of(flight.getTimeOfDeparture().getHours(), flight.getTimeOfDeparture().getMinutes()));
+        }
         TimePicker timeOfArrivalPicker = new TimePicker();
         timeOfArrivalPicker.setLabel("Time of arrival (UTC)");
-        timeOfArrivalPicker.setValue(LocalTime.of(flight.getTimeOfArrival().getHours(), flight.getTimeOfArrival().getMinutes()));
+        if(flight.getTimeOfArrival()!=null) {
+            timeOfArrivalPicker.setValue(LocalTime.of(flight.getTimeOfArrival().getHours(), flight.getTimeOfArrival().getMinutes()));
+        }
         formLayout.setColspan(timeOfDeparturePicker, 2);
         formLayout.setColspan(timeOfArrivalPicker, 2);
         timeOfArrivalPicker.setEnabled(timeOfDeparturePicker.getValue() != null);
@@ -477,7 +633,7 @@ public class FlightsView extends VerticalLayout {
         dateField.setLabel("Date");
         formLayout.setColspan(dateField, 2);
         dateField.setRequired(true);
-        dateField.setValue(LocalDate.of(flight.getDate().getYear(), flight.getDate().getMonth(), flight.getDate().getDay()));
+        dateField.setValue(flight.getDate().toLocalDate());
         TextField taskField = new TextField();
         taskField.setLabel("Task");
         taskField.setValue(flight.getTask());
@@ -507,25 +663,191 @@ public class FlightsView extends VerticalLayout {
             Glider glider = gliderField.getValue();
             Pilot pilot1 = pilot1Field.getValue();
             Pilot pilot2 = pilot2Field.getValue();
-            boolean isActive;
-            boolean isArchival;
-            if (timeOfDeparturePicker.getValue() == null) {
+            LocalTime timeOfArrival = timeOfArrivalPicker.getValue();
+            LocalTime timeOfDeparture =  timeOfDeparturePicker.getValue();
+            Date date = Date.valueOf(dateField.getValue());
+            String pointOfArrival = pointOfArrivalField.getValue();
+            String pointOfDeparture = pointOfDepartureField.getValue();
+            String task = taskField.getValue();
+            String preFlightCheckup = preFlightCheckupField.getValue();
+            editFlightLogic(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, timeOfDeparture, timeOfArrival, task, preFlightCheckup);
+            editForm.close();
+            UI.getCurrent().getPage().reload();
+        });
+        Button cancelButton = new Button("Cancel", e -> editForm.close());
+        editForm.getFooter().add(cancelButton, editButton);
+        editForm.add(formLayout);
+        editForm.open();
+    }
+
+    private void showFilterForm(GridListDataView<Flight> dataView) {
+        Dialog filterForm = new Dialog();
+        FormLayout formLayout = new FormLayout();
+        formLayout.setAutoResponsive(true);
+        formLayout.setExpandFields(true);
+        ComboBox<Glider> gliderField = new ComboBox<>();
+        gliderField.setLabel("Glider");
+        gliderField.setItems(gliderService.getAllGliders());
+        gliderField.setItemLabelGenerator(Glider::getRegistrationNumber);
+        if(gliderFilter != null) {
+            gliderField.setValue(gliderFilter);
+        }
+        formLayout.setColspan(gliderField, 2);
+        ComboBox<Pilot> pilot1Field = new ComboBox<>();
+        pilot1Field.setLabel("Pilot 1");
+        pilot1Field.setItems(pilotService.getAllPilots());
+        if(pilot1Filter != null) {
+            pilot1Field.setValue(pilot1Filter);
+        }
+        pilot1Field.setItemLabelGenerator(Pilot::getName);
+        ComboBox<Pilot> pilot2Field = new ComboBox<>();
+        pilot2Field.setLabel("Pilot 2");
+        pilot2Field.setItems(pilotService.getAllPilots());
+        if(pilot2Filter != null) {
+            pilot2Field.setValue(pilot2Filter);
+        }
+        pilot2Field.setItemLabelGenerator(Pilot::getName);
+        ComboBox<Pilot> eitherPilotField = new ComboBox<>();
+        eitherPilotField.setLabel("Either Pilot");
+        eitherPilotField.setItems(pilotService.getAllPilots());
+        if(anyPilotFilter != null) {
+            eitherPilotField.setValue(anyPilotFilter);
+        }
+        eitherPilotField.setItemLabelGenerator(Pilot::getName);
+        TimePicker timeOfDeparturePicker = new TimePicker();
+        timeOfDeparturePicker.setLabel("Time of departure (UTC)");
+        if(timeOfDepartureFilter != null) {
+            timeOfDeparturePicker.setValue(timeOfDepartureFilter.toLocalTime());
+        }
+        TimePicker timeOfArrivalPicker = new TimePicker();
+        timeOfArrivalPicker.setLabel("Time of arrival (UTC)");
+        if(timeOfArrivalFilter != null) {
+            timeOfArrivalPicker.setValue(timeOfArrivalFilter.toLocalTime());
+        }
+        formLayout.setColspan(timeOfDeparturePicker, 2);
+        formLayout.setColspan(timeOfArrivalPicker, 2);
+        TextField pointOfDepartureField = new TextField();
+        pointOfDepartureField.setLabel("Point of departure");
+        if(pointOfDepartureFilter != null) {
+            pointOfDepartureField.setValue(pointOfDepartureFilter);
+        }
+        formLayout.setColspan(pointOfDepartureField, 2);
+        TextField pointOfArrivalField = new TextField();
+        pointOfArrivalField.setLabel("Point of arrival");
+        formLayout.setColspan(pointOfArrivalField, 2);
+        if (pointOfArrivalFilter != null) {
+            pointOfArrivalField.setValue(pointOfArrivalFilter);
+        }
+        timeOfDeparturePicker.addValueChangeListener(e -> timeOfArrivalPicker.setMin(e.getValue()));
+        timeOfArrivalPicker.addValueChangeListener(e -> timeOfDeparturePicker.setMax(e.getValue()));
+        DatePicker dateField = new DatePicker();
+        dateField.setLabel("Date");
+        formLayout.setColspan(dateField, 2);
+        if (dateFilter != null) {
+            dateField.setValue(dateFilter.toLocalDate());
+        }
+        TextField taskField = new TextField();
+        taskField.setLabel("Task");
+        if(taskFilter != null) {
+            taskField.setValue(taskFilter);
+        }
+        formLayout.setColspan(taskField, 2);
+        TextField preFlightCheckupField = new TextField();
+        preFlightCheckupField.setLabel("Pre Flight Checkup");
+        if(preFlightCheckupFilter != null) {
+            preFlightCheckupField.setValue(preFlightCheckupFilter);
+        }
+        IntegerField flightDurationHrsField = new IntegerField();
+        flightDurationHrsField.setLabel("Hours");
+        flightDurationHrsField.setMin(0);
+        flightDurationHrsField.setRequired(true);
+        IntegerField flightDurationMinsField = new IntegerField();
+        flightDurationMinsField.setLabel("Minutes");
+        flightDurationMinsField.setMin(0);
+        flightDurationMinsField.setMax(59);
+        flightDurationMinsField.setRequired(true);
+        formLayout.setColspan(preFlightCheckupField, 2);
+        formLayout.addFormRow(gliderField);
+        formLayout.addFormRow(pilot1Field);
+        formLayout.addFormRow(pilot2Field);
+        formLayout.addFormRow(eitherPilotField);
+        formLayout.addFormRow(dateField);
+        formLayout.addFormRow(taskField);
+        formLayout.addFormRow(pointOfDepartureField);
+        formLayout.addFormRow(pointOfArrivalField);
+        formLayout.addFormRow(timeOfDeparturePicker);
+        formLayout.addFormRow(timeOfArrivalPicker);
+        formLayout.addFormRow(new Span("Flight Duration"));
+        formLayout.addFormRow(flightDurationHrsField, flightDurationMinsField);
+        formLayout.addFormRow(preFlightCheckupField);
+        Button confirmButton = new Button("Confirm", e -> {
+            gliderFilter = gliderField.getValue();
+            pilot1Filter = pilot1Field.getValue();
+            pilot2Filter = pilot2Field.getValue();
+            anyPilotFilter = eitherPilotField.getValue();
+            if (dateField.getValue() != null) {
+                dateFilter = Date.valueOf(dateField.getValue());
+            }
+            if (timeOfDeparturePicker.getValue() != null) {
+                timeOfDepartureFilter = Time.valueOf(timeOfDeparturePicker.getValue());
+            }
+            if (timeOfArrivalPicker.getValue() != null ) {
+            timeOfArrivalFilter = Time.valueOf(timeOfArrivalPicker.getValue());
+            }
+            PGInterval flightDuration;
+            if(flightDurationMinsField.getValue() != null && flightDurationHrsField.getValue()!=null) {
+                try {
+                    flightDuration = new PGInterval(flightDurationHrsField.getValue() + " hours" + flightDurationMinsField.getValue() + " minutes");
+                } catch (SQLException ex) {
+                    Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode()); notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+                    throw new RuntimeException(ex);
+                }
+            }
+            else {
+                flightDuration = null;
+            }
+            flightTimeFilter = flightDuration;
+            pointOfDepartureFilter = pointOfDepartureField.getValue();
+            pointOfArrivalFilter = pointOfArrivalField.getValue();
+            taskFilter = taskField.getValue();
+            preFlightCheckupFilter = preFlightCheckupField.getValue();
+            filterForm.close();
+            dataView.refreshAll();
+        });
+        Button cancelButton = new Button("Cancel", e -> filterForm.close());
+        filterForm.add(formLayout);
+        filterForm.getFooter().add(cancelButton, confirmButton);
+        filterForm.open();
+    }
+
+    private void editFlightLogic(Flight flight, Glider glider, Pilot pilot1, Pilot pilot2, Date date, String pointOfDeparture, String pointOfArrival, LocalTime timeOfDeparture, LocalTime timeOfArrival, String task, String preFlightCheckup) {
+        Time sqlTimeOfDeparture = null;
+        if (timeOfDeparture != null) {
+            sqlTimeOfDeparture = Time.valueOf(timeOfDeparture);
+        }
+        Time sqlTimeOfArrival = null;
+        if (timeOfArrival != null) {
+            sqlTimeOfArrival = Time.valueOf(timeOfArrival);
+        }
+        Flight editedFlight = new Flight(glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, sqlTimeOfDeparture, sqlTimeOfArrival, task, preFlightCheckup);
+        boolean isActive;
+        boolean isArchival;
+        try {
+            if (timeOfDeparture == null) {
                 isActive = false;
                 isArchival = false;
-            } else if (timeOfArrivalPicker.getValue() == null) {
+            } else if (timeOfArrival == null) {
                 isActive = true;
                 isArchival = false;
-            }
-            else{
+            } else {
                 isActive = false;
                 isArchival = true;
             }
-            PGInterval flightDuration = null;
             String hours;
             String minutes;
-            LocalTime timeOfArrival = timeOfArrivalPicker.getValue();
-            LocalTime timeOfDeparture =  timeOfDeparturePicker.getValue();
-            if(isArchival) {
+            PGInterval flightDuration = null;
+            if (isArchival) {
                 if (timeOfArrival.getHour() - timeOfDeparture.getHour() > 0 && timeOfArrival.getMinute() < timeOfDeparture.getMinute()) {
                     hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour() - 1);
                     minutes = String.valueOf(60 - timeOfArrival.getMinute() + timeOfDeparture.getMinute());
@@ -536,36 +858,33 @@ public class FlightsView extends VerticalLayout {
                 try {
                     flightDuration = new PGInterval(hours + " hours " + minutes + " minutes");
                 } catch (SQLException ex) {
+                    Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode());
+                    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                     throw new RuntimeException(ex);
                 }
             }
-            Date date = Date.valueOf(dateField.getValue());
-            String pointOfArrival = pointOfArrivalField.getValue();
-            String pointOfDeparture = pointOfDepartureField.getValue();
-            String task = taskField.getValue();
-            String preFlightCheckup = preFlightCheckupField.getValue();
             PGInterval prevFlightTime = flight.getFlightTime();
-            Flight editedFlight = new Flight(glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, Time.valueOf(timeOfDeparture), Time.valueOf(timeOfArrival), task, preFlightCheckup);
-            try {
-                List<Flight> filteredByGlider = flightService.getArchivalFlightsByGliderAndDate(glider, date);
-                List<Flight> filteredByPilot1 = flightService.getArchivalFlightsByPilotAndDate(pilot1, date);
-                List<Flight> filteredByPilot2 = null;
-                if (pilot2 != null){
-                    filteredByPilot2 = flightService.getArchivalFlightsByPilotAndDate(pilot2, date);
+            List<Flight> filteredByGlider = flightService.getArchivalFlightsByGliderAndDate(glider, date);
+            List<Flight> filteredByPilot1 = flightService.getArchivalFlightsByPilotAndDate(pilot1, date);
+            List<Flight> filteredByPilot2 = null;
+            if (pilot2 != null) {
+                filteredByPilot2 = flightService.getArchivalFlightsByPilotAndDate(pilot2, date);
+            }
+            if (flight.validateEdit(flight, filteredByGlider, filteredByPilot1, filteredByPilot2)) {
+                flightService.editFlight(flight, editedFlight);
+                pilotService.editPilot(flight.getPilot1(), flight.getPilot1().getName(), flight.getPilot1().getLicenseNumber(), false);
+                if (flight.getPilot2() != null) {
+                    pilotService.editPilot(flight.getPilot2(), flight.getPilot2().getName(), flight.getPilot2().getLicenseNumber(), false);
                 }
-                if(flight.validateEdit(flight, filteredByGlider, filteredByPilot1, filteredByPilot2)) {
-                    flightService.editFlight(flight, editedFlight);
-                    pilotService.editPilot(flight.getPilot1(), flight.getPilot1().getName(), flight.getPilot1().getLicenseNumber(), false);
-                    if(flight.getPilot2() != null){
+                if (isActive) {
+                    pilotService.editPilot(editedFlight.getPilot1(), editedFlight.getPilot1().getName(), editedFlight.getPilot1().getLicenseNumber(), true);
+                    if (editedFlight.getPilot2() != null) {
                         pilotService.editPilot(flight.getPilot2(), flight.getPilot2().getName(), flight.getPilot2().getLicenseNumber(), false);
                     }
-                    if(isActive) {
-                        pilotService.editPilot(editedFlight.getPilot1(), editedFlight.getPilot1().getName(), editedFlight.getPilot1().getLicenseNumber(), true);
-                        if (editedFlight.getPilot2() != null) {
-                            pilotService.editPilot(flight.getPilot2(), flight.getPilot2().getName(), flight.getPilot2().getLicenseNumber(), false);
-                        }
-                    }
-                    if(isArchival) {
+                }
+                if (isArchival) {
+                    if (prevFlightTime != null) {
                         try {
                             if (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() < 60 && flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() > 0) {
                                 Glider editedGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() - prevFlightTime.getHours()) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes()) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
@@ -573,34 +892,48 @@ public class FlightsView extends VerticalLayout {
                             } else if (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() > 60) {
                                 Glider editedGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() - prevFlightTime.getHours() + 1) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() - 60) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
                                 gliderService.editGlider(glider, editedGlider);
-                            }
-                            else if (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() < 0) {
+                            } else if (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() < 0) {
                                 Glider editedGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() - prevFlightTime.getHours() + 1) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - prevFlightTime.getMinutes() + 60) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
                                 gliderService.editGlider(glider, editedGlider);
                             }
                         } catch (SQLException ex) {
+                            Notification notification = Notification
+                                    .show("Error: " + ex.getErrorCode());
                             throw new RuntimeException(ex);
                         }
                     }
-
+                    else{
+                        try {
+                            if (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() < 60) {
+                                Glider editGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours()) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes()) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
+                                gliderService.editGlider(glider, editGlider);
+                            } else {
+                                Glider editGlider = new Glider(glider.getRegistrationNumber(), new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours() + 1) + " hours" + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() - 60) + "minutes"), glider.getFlightCount(), glider.getType(), glider.getNextCheckupHrs(), glider.getNextCheckupFlights(), glider.getNextCheckupDate(), false);
+                                gliderService.editGlider(glider, editGlider);
+                            }
+                        } catch (SQLException ex) {
+                            Notification notification = Notification
+                                    .show("Error: " + ex.getErrorCode());
+                            throw new RuntimeException(ex);
+                        }
+                    }
                 }
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
             }
-            editForm.close();
-            UI.getCurrent().getPage().reload();
-        });
-        Button cancelButton = new Button("Cancel", e -> editForm.close());
-        editForm.getFooter().add(cancelButton, editButton);
-        editForm.add(formLayout);
-        editForm.open();
+            else{
+                Notification notification = Notification
+                        .show("The submitted record conflicts with at least one preexisting record");
+                notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+        } catch (Exception e) {
+            Notification notification = Notification
+                    .show("Error: " + e.getMessage());
+            notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            throw new RuntimeException(e);
+        }
     }
+
 
     public static void showView() {
-        UI.getCurrent().navigate(FlightsView.class);
-    }
-    //TODO develop this to display the flights by filter passed to this function
-    public static void showViewFilter(Glider glider) {
         UI.getCurrent().navigate(FlightsView.class);
     }
 }

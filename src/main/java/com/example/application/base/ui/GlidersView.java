@@ -14,6 +14,8 @@ import com.vaadin.flow.component.grid.dataview.GridListDataView;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
+import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
@@ -72,6 +74,9 @@ public class GlidersView extends VerticalLayout {
             try {
                 showAdditionForm(gliderService);
             } catch (SQLException ex) {
+                Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode());
+                    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                 throw new RuntimeException(ex);
             }
         });
@@ -112,8 +117,10 @@ public class GlidersView extends VerticalLayout {
                         try {
                             gliderService.deleteGlider(deletingId);
                             flightService.deleteFlightByGliderId(deletingId);
-                            UI.getCurrent().getPage().reload();;
+                            UI.getCurrent().getPage().reload();
                         } catch (SQLException ex) {
+                            Notification notification = Notification
+                                    .show("Error: " + ex.getErrorCode());
                             throw new RuntimeException(ex);
                         }
                     });
@@ -133,6 +140,8 @@ public class GlidersView extends VerticalLayout {
                 try {
                     showEditForm(gliderService, selectionModel.getSelectedItem().get());
                 } catch (SQLException ex) {
+                    Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode());
                     throw new RuntimeException(ex);
                 }
             }
@@ -204,13 +213,20 @@ public class GlidersView extends VerticalLayout {
         IntegerField nextCheckupHrsHrsField = new IntegerField();
         nextCheckupHrsHrsField.setLabel("Hours");
         nextCheckupHrsHrsField.setMin(0);
+        totalFlightTimeHrsField.addValueChangeListener(e -> nextCheckupHrsHrsField.setMin(e.getValue()));
         IntegerField nextCheckupHrsMinsField = new IntegerField();
         nextCheckupHrsMinsField.setLabel("Minutes");
         nextCheckupHrsMinsField.setMin(0);
         nextCheckupHrsMinsField.setMax(59);
+        totalFlightTimeMinsField.addValueChangeListener(e -> {
+            if(totalFlightTimeHrsField == nextCheckupHrsHrsField) {
+                nextCheckupHrsMinsField.setMin(e.getValue());
+            }
+        });
         IntegerField nextCheckupFlightsField = new IntegerField();
         nextCheckupFlightsField.setLabel("Next Checkup in Flights");
         nextCheckupFlightsField.setMin(0);
+        flightCountField.addValueChangeListener(e -> {nextCheckupFlightsField.setMin(e.getValue());});
         formLayout.setColspan(nextCheckupFlightsField, 2);
         DatePicker nextCheckupDateField = new DatePicker();
         nextCheckupDateField.setLabel("Next Checkup Deadline");
@@ -233,6 +249,9 @@ public class GlidersView extends VerticalLayout {
                 String flightTime = totalFlightTimeHrsField.getValue()+" hours "+totalFlightTimeMinsField.getValue()+" minutes";
                 totalFlightTime = new PGInterval(flightTime);
             } catch (SQLException ex) {
+                Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode());
+                    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                 throw new RuntimeException(ex);
             }
             Integer flightCount = flightCountField.getValue();
@@ -242,6 +261,8 @@ public class GlidersView extends VerticalLayout {
                 try {
                     nextCheckupHrs = new PGInterval(nextCheckupHrsHrsField.getValue() + " hours" + nextCheckupHrsMinsField.getValue() + " minutes");
                 } catch (SQLException ex) {
+                    Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode());
                     throw new RuntimeException(ex);
                 }
             }
@@ -335,6 +356,9 @@ public class GlidersView extends VerticalLayout {
                 String flightTime = totalFlightTimeHrsField.getValue()+" hours "+totalFlightTimeMinsField.getValue()+" minutes";
                 totalFlightTime = new PGInterval(flightTime);
             } catch (SQLException ex) {
+                Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode());
+                    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                 throw new RuntimeException(ex);
             }
             Integer flightCount = flightCountField.getValue();
@@ -344,6 +368,8 @@ public class GlidersView extends VerticalLayout {
                 try {
                     nextCheckupHrs = new PGInterval(nextCheckupHrsHrsField.getValue() + " hours " + nextCheckupHrsMinsField.getValue() + " minutes");
                 } catch (SQLException ex) {
+                    Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode());
                     throw new RuntimeException(ex);
                 }
             }
@@ -365,6 +391,9 @@ public class GlidersView extends VerticalLayout {
                     flightService.editFlight(oldFlights.get(i), editedFlight);
                 }
             } catch (SQLException ex) {
+                Notification notification = Notification
+                            .show("Error: " + ex.getErrorCode());
+                    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                 throw new RuntimeException(ex);
             }
             editForm.close();
