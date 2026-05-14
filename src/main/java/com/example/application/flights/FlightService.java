@@ -132,8 +132,8 @@ public class FlightService {
             throw new RuntimeException(e);
         }
     }
-    //TODO zmienic na jedno Flightowe, jedno sqlowe
-    public void editFlight(Flight flight, Flight editedFlight) {
+    //TODO dokonczyc zmiane na jedno Flightowe, jedno sqlowe
+    public void editFlight(Flight editedFlight) {
         Glider glider = editedFlight.getGlider();
         Pilot pilot1 = editedFlight.getPilot1();
         Pilot pilot2 = editedFlight.getPilot2();
@@ -144,6 +144,30 @@ public class FlightService {
         Time timeOfArrival = editedFlight.getTimeOfArrival();
         String task = editedFlight.getTask();
         String preFlightCheckup = editedFlight.getPreFlightCheckup();
+        String status = "premade";
+        if(timeOfArrival == null && timeOfDeparture != null){
+            status = "active";
+        }
+        else if(timeOfArrival != null && timeOfDeparture != null){
+            status = "archival";
+        }
+        String sql = "UPDATE flights SET glider_id = ?, pilot_1_id = ?, pilot_2_id = ?, date = ?, time_of_departure = ?, time_of_arrival = ?, flight_duration = ?, point_of_departure = ?, point_of_arrival = ?, task = ?, pre_flight_checkup = ?, status = ? WHERE id = " + editedFlight.getId();
+        try (Connection conn = dataSource.getConnection()) {
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setLong(1, glider.getId());
+            ps.setLong(2, pilot1.getId());
+            if(pilot2 != null) {
+                ps.setNull(3, Types.INTEGER);
+            }
+            else{
+                ps.setObject(3, null);
+            }
+            ps.execute();
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        /*
         if (flight.getGlider().getId() != glider.getId()) {
             String sql = "UPDATE flights SET glider_id = ? WHERE id = " + flight.getId();
             try (Connection conn = dataSource.getConnection()) {
@@ -318,7 +342,7 @@ public class FlightService {
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-        }
+        }*/
     }
     public List<Flight> getFlightsByDate(Date date) throws SQLException {
         List<Flight> flights = new ArrayList<>();
