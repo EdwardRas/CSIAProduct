@@ -30,7 +30,7 @@ import java.sql.*;
 import java.util.List;
 
 //@Route("building-apps/navigate/gliders")
-@Route("")
+@Route("gliders")
 public class GlidersView extends VerticalLayout {
     private final GliderService gliderService;
     private final FlightService flightService;
@@ -129,12 +129,6 @@ public class GlidersView extends VerticalLayout {
             }
 
         });
-        grid.addSelectionListener(e -> {
-            deleteButton.setEnabled(true);
-            if(e.getFirstSelectedItem().isEmpty()){
-                deleteButton.setEnabled(false);
-            }
-        });
         Button editButton = new Button("Edit Glider", e -> {
             if (selectionModel.getSelectedItem().isPresent()) {
                 try {
@@ -152,6 +146,10 @@ public class GlidersView extends VerticalLayout {
             if(e.getFirstSelectedItem().isEmpty()){
                 deleteButton.setEnabled(false);
                 editButton.setEnabled(false);
+                FlightsView.gliderFilter = null;
+            }
+            else{
+                FlightsView.gliderFilter = selectionModel.getSelectedItem().get();
             }
         });
 
@@ -185,6 +183,7 @@ public class GlidersView extends VerticalLayout {
         add(buttonsLayout, grid);
     }
     private void showAdditionForm(GliderService gliderService) throws SQLException {
+        //TODO fix form allowing invalid data in totalFilghtTime
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -285,6 +284,7 @@ public class GlidersView extends VerticalLayout {
 
     }
     private void showEditForm(GliderService gliderService, Glider glider) throws SQLException {
+        //TODO fix form allowing invalid data in totalFilghtTime
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -395,7 +395,7 @@ public class GlidersView extends VerticalLayout {
                 for(int i = 0; i < oldFlights.size(); i++) {
                     Flight editedFlight;
                     editedFlight = new Flight(glider, oldFlights.get(i).getPilot1(), oldFlights.get(i).getPilot2(), oldFlights.get(i).getDate(), oldFlights.get(i).getPointOfDeparture(), oldFlights.get(i).getPointOfArrival(), oldFlights.get(i).getTimeOfDeparture(), oldFlights.get(i).getTimeOfArrival(), oldFlights.get(i).getTask(), oldFlights.get(i).getPreFlightCheckup());
-                    flightService.editFlight(oldFlights.get(i), editedFlight);
+                    flightService.editFlight(editedFlight);
                 }
             } catch (SQLException ex) {
                 Notification notification = Notification

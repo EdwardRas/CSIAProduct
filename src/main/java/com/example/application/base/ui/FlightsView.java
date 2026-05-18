@@ -56,7 +56,7 @@ import java.util.List;
 
 import static com.vaadin.flow.component.notification.Notification.show;
 
-@Route("building-apps/navigate/flights")
+@Route("flights")
 public class FlightsView extends VerticalLayout {
 
     private final FlightService flightService;
@@ -76,7 +76,7 @@ public class FlightsView extends VerticalLayout {
     private PGInterval flightTimeFilter;
     private String taskFilter;
     private String preFlightCheckupFilter;
-    private Glider gliderFilter;
+    public static Glider gliderFilter;
 
     @Autowired
     public FlightsView(FlightService flightService, GliderService gliderService, PilotService pilotService) {
@@ -84,7 +84,9 @@ public class FlightsView extends VerticalLayout {
         this.pilotService = pilotService;
         this.gliderService = gliderService;
 
+        //create list of all flights in DB
         List<Flight> records = this.flightService.getAllFlights();
+        //Create gird display element
         Grid<Flight> grid = new Grid<>();
         grid.setSelectionMode(Grid.SelectionMode.SINGLE);
         Grid.Column<Flight> IDColumn = grid
@@ -134,10 +136,13 @@ public class FlightsView extends VerticalLayout {
                 .addColumn(Flight::getPreFlightCheckup)
                 .setHeader("Pre-Flight Checkup").setResizable(true)
                 .setSortable(true);
+        //set the rows of the grid to all the flights in DB
         GridListDataView<Flight> dataView = grid.setItems(records);
 
+        //create button to add flight
         Button addButton = new Button("Add Flight", e -> {
             try {
+                //displays addition form to the user
                 showAdditionForm(gliderService, pilotService);
             } catch (SQLException ex) {
                 Notification notification = show("Error: " + ex.getErrorCode());
@@ -145,8 +150,10 @@ public class FlightsView extends VerticalLayout {
             }
         });
 
+        //creates selection model for flight selection to get selected item of grid
         GridSingleSelectionModel<Flight> selectionModel = (GridSingleSelectionModel<Flight>)grid.getSelectionModel();
 
+        //create button to delete record
         Button deleteButton = new Button("Delete Flight", e -> {
             Long deletingId;
             if (selectionModel.getSelectedItem().isPresent()) {
@@ -156,14 +163,9 @@ public class FlightsView extends VerticalLayout {
                     deleteDialog.open();
                 }
             }
+        });
 
-        });
-        grid.addSelectionListener(e -> {
-            deleteButton.setEnabled(true);
-            if(e.getFirstSelectedItem().isEmpty()){
-                deleteButton.setEnabled(false);
-            }
-        });
+        //create button to edit flights
         Button editButton = new Button("Edit Flight", e -> {
             if (selectionModel.getSelectedItem().isPresent()) {
                 try {
@@ -207,7 +209,10 @@ public class FlightsView extends VerticalLayout {
                 UI.getCurrent().getPage().reload();
             }
         });
+
         Button filterButton = new Button("Filter", e -> showFilterForm(dataView));
+
+        //add listener entity to check when the selection on the grid changes
         grid.addSelectionListener(e -> {
             deleteButton.setEnabled(true);
             editButton.setEnabled(true);
@@ -227,16 +232,20 @@ public class FlightsView extends VerticalLayout {
             }
         });
 
+        //set the buttons which aren't always enabled to be disabled by default
         deleteButton.setEnabled(false);
         editButton.setEnabled(false);
         launchButton.setEnabled(false);
         landButton.setEnabled(false);
 
+        //create tabs to filter by status and object which holds them all
         Tab premade = new Tab("Pre-Made");
         Tab active = new Tab("Active");
         Tab archival = new Tab("Archival");
 
         Tabs tabs = new Tabs(premade, active, archival);
+
+        //add listener object for when tabs are switched
         tabs.addSelectedChangeListener(e -> {
             if (tabs.getSelectedTab() == premade) {
                 //set global filters
@@ -255,12 +264,15 @@ public class FlightsView extends VerticalLayout {
             }
             dataView.refreshAll();
         });
+
+        //create search text field
         TextField searchField = new TextField();
         searchField.setWidth("250px");
         searchField.setPlaceholder("Search");
         searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
         searchField.setValueChangeMode(ValueChangeMode.EAGER);
         searchField.addValueChangeListener(e -> dataView.refreshAll());
+
         //Data filtering
         dataView.addFilter(item -> {
             String searchTerm = searchField.getValue().trim();
@@ -352,14 +364,11 @@ public class FlightsView extends VerticalLayout {
                     matchesID || matchesDate || matchesPointOfDeparture || matchesPilot2 || matchesGlider ||
                     matchesPilot1 || matchesPointOfArrival || matchesTimeOfDeparture) && matchesFilter;
         });
-//        MenuBar menuBar = new MenuBar();
-//        menuBar.addItem("Export", e -> exportRecords());
-//        Anchor exportAnchor = new Anchor();
-//        exportAnchor.setText("Export");
-//        exportAnchor.getElement().setAttribute("download", true);
-//        exportAnchor.add(new Button("Export records"));
 
+        //create button to export records
         Button exportButton = new Button("Export", e -> {showExportDialog(gliderService, flightService);});
+
+        //add all UI elements
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
         buttonsLayout.add(new Button("Gliders", e -> GlidersView.showView()));
@@ -368,7 +377,9 @@ public class FlightsView extends VerticalLayout {
         add(buttonsLayout, tabs, grid);
 
     }
+    //shows user form to export records
     private void showExportDialog(GliderService gliderService, FlightService flightService) {
+        //creates form and all its data entry fields
         Dialog exportForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -390,6 +401,9 @@ public class FlightsView extends VerticalLayout {
         }
         formLayout.setColspan(datePicker, 2);
         Button downloadButton = new Button("Confirm", e -> exportForm.close());
+        Button cancelButton = new Button("Cancel", e -> exportForm.close());
+
+        //download logic
         DownloadHandler csvResource = DownloadHandler.fromInputStream(d -> {
             Glider glider = gliderField.getValue();
             Date date = Date.valueOf(datePicker.getValue());
@@ -402,7 +416,8 @@ public class FlightsView extends VerticalLayout {
         Anchor downloadAnchor = new Anchor(csvResource, "");
         downloadAnchor.getElement().setAttribute("download", true);
         downloadAnchor.add(downloadButton);
-        Button cancelButton = new Button("Cancel", e -> exportForm.close());
+
+        //adds all UI elements and opens form
         formLayout.addFormRow(gliderField);
         formLayout.addFormRow(datePicker);
         exportForm.getFooter().add(cancelButton, downloadAnchor);
@@ -410,16 +425,18 @@ public class FlightsView extends VerticalLayout {
         exportForm.open();
 
     }
+    //shows user dialog to confirm deletion
     private static ConfirmDialog getDeleteDialog(FlightService flightService, Long deletingId, GliderService gliderService) {
+        //create dialog
         ConfirmDialog deleteDialog = new ConfirmDialog();
         deleteDialog.setHeader("Delete Flight?");
         deleteDialog.setText("Are you sure you want to permanently delete this item?");
-
         deleteDialog.setCancelable(true);
         deleteDialog.addCancelListener(event -> deleteDialog.close());
         deleteDialog.setConfirmText("Delete");
         deleteDialog.setConfirmButtonTheme("error primary");
         deleteDialog.addConfirmListener(event -> {
+            //deletion logic
             try {
                 if(flightService.getFlightById(deletingId).isArchival){
                     Flight flight = flightService.getFlightById(deletingId);
@@ -443,7 +460,14 @@ public class FlightsView extends VerticalLayout {
         return deleteDialog;
     }
 
+    /*
+TODO ===================================================
+TODO tutaj skończyłem pisać komentarze !!!!!!!!!!!!!!!!!
+TODO ===================================================
+*/
+
     private void showAdditionForm(GliderService gliderService, PilotService pilotService) throws SQLException {
+        //TODO fix form allowing invalid data in timeOfArrivalPicker
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -654,6 +678,7 @@ public class FlightsView extends VerticalLayout {
     }
 
     private void showEditForm(GliderService gliderService, PilotService pilotService, Flight flight) throws SQLException {
+        //TODO fix form allowing invalid data in timeOfArrivalPicker
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -954,12 +979,12 @@ public class FlightsView extends VerticalLayout {
             if (flight.validateEdit(flight, filteredByGlider, filteredByPilot1, filteredByPilot2)) {
                 String checkupChecker = flight.checkNextCheckup();
                 if (checkupChecker == null) {
-                    flightService.editFlight(flight, editedFlight);
+                    flightService.editFlight(editedFlight);
                     flightEditingSynchronisation(flight, glider, isArchival, prevFlightTime, flightDuration, isActive, editedFlight);
                 }
                 else {
                     if (!checkupChecker.contains("overdue")) {
-                        flightService.editFlight(flight, editedFlight);
+                        flightService.editFlight(editedFlight);
                         flightEditingSynchronisation(flight, glider, isArchival, prevFlightTime, flightDuration, isActive, editedFlight);
                         Notification notification = show(checkupChecker);
                         notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
@@ -1196,7 +1221,7 @@ public class FlightsView extends VerticalLayout {
             }
             return new DownloadResponse(
                     new java.io.ByteArrayInputStream(pdfBytes),
-                    "example.pdf",
+                    first.getDate() + first.getGlider().getRegistrationNumber() + ".pdf",
                     "application/pdf",
                     -1
             );

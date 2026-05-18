@@ -28,7 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.sql.SQLException;
 import java.util.List;
 
-@Route("building-apps/navigate/pilots")
+@Route("pilots")
 public class PilotsView extends VerticalLayout {
     private final PilotService pilotService;
     private final FlightService flightService;
@@ -47,10 +47,10 @@ public class PilotsView extends VerticalLayout {
                 .setHeader("Name").setResizable(true).setSortable(true);
         Grid.Column<Pilot> licenseNumberColumn = grid
                 .addColumn(Pilot::getLicenseNumber)
-                .setHeader("Type").setResizable(true).setSortable(true);
+                .setHeader("License Number").setResizable(true).setSortable(true);
         Grid.Column<Pilot> statusColumn = grid
                 .addColumn(Pilot::isFlying)
-                .setHeader("Is flying").setResizable(true).setSortable(true);
+                .setHeader("Is flying?").setResizable(true).setSortable(true);
 
         GridListDataView<Pilot> dataView = grid.setItems(records);
         TextField searchField = new TextField();
@@ -223,7 +223,7 @@ public class PilotsView extends VerticalLayout {
                     } else {
                         editedFlight = new Flight(oldFlights.get(i).getGlider(), oldFlights.get(i).getPilot1(), pilot, oldFlights.get(i).getDate(), oldFlights.get(i).getPointOfDeparture(), oldFlights.get(i).getPointOfArrival(), oldFlights.get(i).getTimeOfDeparture(), oldFlights.get(i).getTimeOfArrival(), oldFlights.get(i).getTask(), oldFlights.get(i).getPreFlightCheckup());
                     }
-                    flightService.editFlight(oldFlights.get(i), editedFlight);
+                    flightService.editFlight(editedFlight);
                 }
             } catch (SQLException ex) {
                 Notification notification = Notification

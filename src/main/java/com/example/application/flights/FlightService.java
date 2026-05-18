@@ -132,7 +132,6 @@ public class FlightService {
             throw new RuntimeException(e);
         }
     }
-    //TODO dokonczyc zmiane na jedno Flightowe, jedno sqlowe
     public void editFlight(Flight editedFlight) {
         Glider glider = editedFlight.getGlider();
         Pilot pilot1 = editedFlight.getPilot1();
@@ -145,11 +144,13 @@ public class FlightService {
         String task = editedFlight.getTask();
         String preFlightCheckup = editedFlight.getPreFlightCheckup();
         String status = "premade";
+        PGInterval flightTime;
         if(timeOfArrival == null && timeOfDeparture != null){
             status = "active";
         }
         else if(timeOfArrival != null && timeOfDeparture != null){
             status = "archival";
+            flightTime = new PGInterval();
         }
         String sql = "UPDATE flights SET glider_id = ?, pilot_1_id = ?, pilot_2_id = ?, date = ?, time_of_departure = ?, time_of_arrival = ?, flight_duration = ?, point_of_departure = ?, point_of_arrival = ?, task = ?, pre_flight_checkup = ?, status = ? WHERE id = " + editedFlight.getId();
         try (Connection conn = dataSource.getConnection()) {
@@ -157,11 +158,35 @@ public class FlightService {
             ps.setLong(1, glider.getId());
             ps.setLong(2, pilot1.getId());
             if(pilot2 != null) {
-                ps.setNull(3, Types.INTEGER);
+                ps.setLong(3, pilot2.getId());
             }
             else{
-                ps.setObject(3, null);
+                ps.setNull(3, Types.INTEGER);
             }
+            ps.setDate(4, date);
+            ps.setTime(5, timeOfDeparture);
+            ps.setTime(6, timeOfArrival);
+            if(status.equals("archival")) {
+                String hours;
+                String minutes;
+                if(timeOfArrival.getHours() - timeOfDeparture.getHours() > 0 && timeOfArrival.getMinutes() < timeOfDeparture.getMinutes()){
+                    hours = String.valueOf(timeOfArrival.getHours() - timeOfDeparture.getHours() - 1);
+                    minutes = String.valueOf(60 -  timeOfArrival.getMinutes() + timeOfDeparture.getMinutes());
+                }
+                else {
+                    hours = String.valueOf(timeOfArrival.getHours() -  timeOfDeparture.getHours());
+                    minutes = String.valueOf(timeOfArrival.getMinutes() - timeOfDeparture.getMinutes());
+                }
+                ps.setObject(7, new PGInterval(hours + " hours " +  minutes + " minutes"));
+            }
+            else {
+                ps.setObject(7, null);
+            }
+            ps.setString(8, pointOfDeparture);
+            ps.setString(9, pointOfArrival);
+            ps.setString(10, task);
+            ps.setString(11, preFlightCheckup);
+            ps.setString(12, status);
             ps.execute();
         }
         catch (SQLException e) {
