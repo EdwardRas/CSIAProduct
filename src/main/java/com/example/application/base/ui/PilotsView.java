@@ -30,13 +30,20 @@ import java.util.List;
 
 @Route("pilots")
 public class PilotsView extends VerticalLayout {
+
+    //DB service objects
     private final PilotService pilotService;
     private final FlightService flightService;
-    @Autowired
+
+    @Autowired//automatically handles method inputs
     public PilotsView(PilotService pilotService, FlightService flightService) {
         this.flightService = flightService;
         this.pilotService = pilotService;
+
+        //get all pilots in DB
         List<Pilot> records = this.pilotService.getAllPilots();
+
+        //create grid to display pilots
         Grid<Pilot> grid = new Grid<>();
         grid.setSelectionMode(Grid.SelectionMode.SINGLE);
         Grid.Column<Pilot> IDColumn = grid
@@ -52,10 +59,15 @@ public class PilotsView extends VerticalLayout {
                 .addColumn(Pilot::isFlying)
                 .setHeader("Is flying?").setResizable(true).setSortable(true);
 
+        //set items of grid to be all pilots
         GridListDataView<Pilot> dataView = grid.setItems(records);
+
+        //create search text field
         TextField searchField = new TextField();
         searchField.setWidth("250px");
-        searchField.setLabel("Search:");
+        searchField.setLabel("Search");
+
+        //create button to open addition form
         Button addButton = new Button("Add Pilot", e -> {
             try {
                 showAdditionForm(pilotService);
@@ -65,32 +77,17 @@ public class PilotsView extends VerticalLayout {
                 throw new RuntimeException(ex);
             }
         });
-        Span status = new Span();
-        status.setVisible(false);
 
-        ConfirmDialog dialog = new ConfirmDialog();
-        dialog.setHeader("Delete \"Report Q4\"?");
-        dialog.setText(
-                "Are you sure you want to permanently delete this item?");
-
-        dialog.setCancelable(true);
-        dialog.addCancelListener(event -> System.out.println("Cancel"));
-
-        dialog.setConfirmText("Delete");
-        dialog.setConfirmButtonTheme("error primary");
-        dialog.addConfirmListener(event -> System.out.println("Delete"));
-
-        Button testDialogButton = new Button("Open confirm dialog");
-        testDialogButton.addClickListener(event -> {
-            dialog.open();
-            status.setVisible(false);
-        });
+        //get selection model for pilot selection to get selected item in grid
         GridSingleSelectionModel<Pilot> selectionModel = (GridSingleSelectionModel<Pilot>)grid.getSelectionModel();
+
+        //create delete button
         Button deleteButton = new Button("Delete Pilot", e -> {
             Long deletingId;
             if (selectionModel.getSelectedItem().isPresent()) {
                 deletingId = selectionModel.getSelectedItem().get().getId();
                 if (deletingId >= 0) {
+                    //create dialog to confirm deletion
                     ConfirmDialog deleteDialog = new ConfirmDialog();
                     deleteDialog.setHeader("Delete Pilot?");
                     deleteDialog.setText(
@@ -112,17 +109,13 @@ public class PilotsView extends VerticalLayout {
                                     .show("Error: " + ex.getErrorCode());
                             throw new RuntimeException(ex);
                         }
-                    });;
+                    });
                     deleteDialog.open();
                 }
             }
         });
-        grid.addSelectionListener(e -> {
-            deleteButton.setEnabled(true);
-            if(e.getFirstSelectedItem().isEmpty()){
-                deleteButton.setEnabled(false);
-            }
-        });
+
+        //create button to show pilot edit form
         Button editButton = new Button("Edit Pilot", e -> {
             if (selectionModel.getSelectedItem().isPresent()) {
                 try {
@@ -134,6 +127,8 @@ public class PilotsView extends VerticalLayout {
                 }
             }
         });
+
+        //add selection listener to grid
         grid.addSelectionListener(e -> {
             deleteButton.setEnabled(true);
             editButton.setEnabled(true);
@@ -143,8 +138,11 @@ public class PilotsView extends VerticalLayout {
             }
         });
 
+        //set buttons which are not always to be disabled by default
         deleteButton.setEnabled(false);
         editButton.setEnabled(false);
+
+        //search functionality
         searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
         searchField.setValueChangeMode(ValueChangeMode.EAGER);
         searchField.addValueChangeListener(e -> dataView.refreshAll());
@@ -160,15 +158,20 @@ public class PilotsView extends VerticalLayout {
 
             return matchesID || matchesName || matchesLicenseNumber ;
         });
+
+        //add all UI elements
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
         buttonsLayout.add(new Button("Flights", e -> FlightsView.showView()));
         buttonsLayout.add(new Button("Gliders", e -> GlidersView.showView()));
-        buttonsLayout.add(searchField, addButton, deleteButton, editButton, testDialogButton);
+        buttonsLayout.add(searchField, addButton, deleteButton, editButton);
         add(buttonsLayout, grid);
     }
 
+    //show user form to input data for pilot addition
     private void showAdditionForm(PilotService pilotService) throws SQLException {
+        //TODO add field requirements verifier
+        //create UI elements for data input
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -182,6 +185,8 @@ public class PilotsView extends VerticalLayout {
         formLayout.setColspan(licenseNumberField, 2);
         formLayout.addFormRow(nameField);
         formLayout.addFormRow(licenseNumberField);
+
+        //create buttons to confirm addition
         Button addButton = new Button("Add", e -> {
             String name = nameField.getValue();
             String licenseNumber = licenseNumberField.getValue();
@@ -190,11 +195,17 @@ public class PilotsView extends VerticalLayout {
             UI.getCurrent().getPage().reload();
         });
         Button cancelButton = new Button("Cancel", e -> additionForm.close());
+
+        //add all UI elements, show form
         additionForm.getFooter().add(cancelButton, addButton);
         additionForm.add(formLayout);
         additionForm.open();
     }
+
+    //show user form to input data for pilot editing
     private void showEditForm(PilotService pilotService, Pilot pilot) throws SQLException {
+        //TODO add field requirements verifier
+        //create UI elements for data input
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -210,6 +221,8 @@ public class PilotsView extends VerticalLayout {
         licenseNumberField.setValue(pilot.getLicenseNumber());
         formLayout.addFormRow(nameField);
         formLayout.addFormRow(licenseNumberField);
+
+        //create buttons to confirm addition
         Button addButton = new Button("Add", e -> {
             pilot.setName(nameField.getValue());
             pilot.setLicenseNumber(licenseNumberField.getValue());
@@ -232,16 +245,16 @@ public class PilotsView extends VerticalLayout {
             }
             editForm.close();
             UI.getCurrent().getPage().reload();
-            
-
-                
         });
         Button cancelButton = new Button("Cancel", e -> editForm.close());
+
+        //add all UI elements, show form
         editForm.getFooter().add(cancelButton, addButton);
         editForm.add(formLayout);
         editForm.open();
         
     }
+    //navigate the UI to this view
     public static void showView() {
         UI.getCurrent().navigate(PilotsView.class);
     }

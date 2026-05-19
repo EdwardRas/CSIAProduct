@@ -59,12 +59,14 @@ import static com.vaadin.flow.component.notification.Notification.show;
 @Route("flights")
 public class FlightsView extends VerticalLayout {
 
+    //DB service objects
     private final FlightService flightService;
     private final PilotService pilotService;
     private final GliderService gliderService;
 
-    public boolean isActiveFilter = false;
-    public boolean isArchivalFilter = false;
+    //global filter variables
+    private boolean isActiveFilter = false;
+    private boolean isArchivalFilter = false;
     private Pilot pilot1Filter;
     private Pilot pilot2Filter;
     private Pilot anyPilotFilter;
@@ -76,9 +78,10 @@ public class FlightsView extends VerticalLayout {
     private PGInterval flightTimeFilter;
     private String taskFilter;
     private String preFlightCheckupFilter;
-    public static Glider gliderFilter;
+    //gliderFilter is protected static so that it can be easily modified from GlidersView
+    protected static Glider gliderFilter;
 
-    @Autowired
+    @Autowired //automatically handles input variables
     public FlightsView(FlightService flightService, GliderService gliderService, PilotService pilotService) {
         this.flightService = flightService;
         this.pilotService = pilotService;
@@ -150,7 +153,7 @@ public class FlightsView extends VerticalLayout {
             }
         });
 
-        //creates selection model for flight selection to get selected item of grid
+        //gets selection model for flight selection to get selected item in grid
         GridSingleSelectionModel<Flight> selectionModel = (GridSingleSelectionModel<Flight>)grid.getSelectionModel();
 
         //create button to delete record
@@ -176,6 +179,8 @@ public class FlightsView extends VerticalLayout {
                 }
             }
         });
+
+        //create button to launch premade flights
         Button launchButton = new Button("Launch", e -> {
             if(selectionModel.getSelectedItem().isPresent() && !(selectionModel.getSelectedItem().get().isActive || selectionModel.getSelectedItem().get().isArchival)){
                 Flight flight = selectionModel.getSelectedItem().get();
@@ -192,6 +197,7 @@ public class FlightsView extends VerticalLayout {
                 editFlightLogic(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, timeOfDeparture,  timeOfArrival, task, preFlightCheckup);
             }
         });
+        //create button to land active flights
         Button landButton = new Button("Land", e -> {
             if(selectionModel.getSelectedItem().isPresent() && selectionModel.getSelectedItem().get().isActive){
                 Flight flight = selectionModel.getSelectedItem().get();
@@ -460,14 +466,11 @@ public class FlightsView extends VerticalLayout {
         return deleteDialog;
     }
 
-    /*
-TODO ===================================================
-TODO tutaj skończyłem pisać komentarze !!!!!!!!!!!!!!!!!
-TODO ===================================================
-*/
-
+    //show form to input addition data
     private void showAdditionForm(GliderService gliderService, PilotService pilotService) throws SQLException {
         //TODO fix form allowing invalid data in timeOfArrivalPicker
+
+        //create input fields
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -518,11 +521,10 @@ TODO ===================================================
         preFlightCheckupField.setLabel("Pre Flight Checkup");
         formLayout.setColspan(preFlightCheckupField, 2);
         preFlightCheckupField.setRequired(true);
-        timeOfDeparturePicker.addValueChangeListener(e -> {
-            timeOfArrivalPicker.setEnabled(timeOfDeparturePicker.getValue() != null);
-        });
+        timeOfDeparturePicker.addValueChangeListener(e -> timeOfArrivalPicker.setEnabled(timeOfDeparturePicker.getValue() != null));
+
+        //add all fields to form layout
         formLayout.addFormRow(gliderField);
-        formLayout.setColspan(gliderField, 2);
         formLayout.addFormRow(pilot1Field);
         formLayout.addFormRow(pilot2Field);
         formLayout.addFormRow(dateField);
@@ -533,12 +535,14 @@ TODO ===================================================
         formLayout.addFormRow(timeOfArrivalPicker);
         formLayout.addFormRow(preFlightCheckupField);
 
+        //create button to execute addition
         Button addButton = new Button("Add", e -> {
             Glider glider = gliderField.getValue();
             Pilot pilot1 = pilot1Field.getValue();
             Pilot pilot2 = pilot2Field.getValue();
             boolean isActive;
             boolean isArchival;
+            //determines status
             if (timeOfDeparturePicker.getValue() == null) {
                 isActive = false;
                 isArchival = false;
@@ -556,6 +560,7 @@ TODO ===================================================
             LocalTime timeOfArrival = timeOfArrivalPicker.getValue();
             LocalTime timeOfDeparture =  timeOfDeparturePicker.getValue();
             if(isArchival) {
+                //calculates flight duration
                 if (timeOfArrival.getHour() - timeOfDeparture.getHour() > 0 && timeOfArrival.getMinute() < timeOfDeparture.getMinute()) {
                     hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour() - 1);
                     minutes = String.valueOf(60 - timeOfArrival.getMinute() + timeOfDeparture.getMinute());
@@ -590,13 +595,16 @@ TODO ===================================================
                 flight.setFlightTime(flightDuration);
             }
             try{
+                //gets filtered lists of archival flights which could conflict with this flight
                 List<Flight> filteredByGlider = flightService.getArchivalFlightsByGliderAndDate(glider, date);
                 List<Flight> filteredByPilot1 = flightService.getArchivalFlightsByPilotAndDate(pilot1, date);
                 List<Flight> filteredByPilot2 = null;
                 if (pilot2 != null){
                     filteredByPilot2 = flightService.getArchivalFlightsByPilotAndDate(pilot2, date);
                 }
+
                 if(flight.validateAddition(filteredByGlider, filteredByPilot1, filteredByPilot2)) {
+                    //checks if flight would violate checkup deadlines
                     String checkupChecker = flight.checkNextCheckup();
                     if (checkupChecker == null) {
                         flightService.addFlight(flight);
@@ -656,13 +664,17 @@ TODO ===================================================
             }
 
         });
+        //create button to cancel action
         Button cancelButton = new Button("Cancel", e -> additionForm.close());
+
+        //add buttons and open form
         additionForm.getFooter().add(cancelButton, addButton);
         additionForm.add(formLayout);
         additionForm.open();
 
     }
 
+    //logic to handle changes to glider as a result of flight addition
     private static void flightAdditionGliderHandling(GliderService gliderService, PGInterval flightDuration, Glider glider) throws SQLException {
         if (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes() < 60) {
             glider.setTotalFlightTime(new PGInterval((flightDuration.getHours() + glider.getTotalFlightTime().getHours()) + " hours " + (flightDuration.getMinutes() + glider.getTotalFlightTime().getMinutes()) + " minutes"));
@@ -677,8 +689,11 @@ TODO ===================================================
         }
     }
 
+    //shows form to input edit data
     private void showEditForm(GliderService gliderService, PilotService pilotService, Flight flight) throws SQLException {
         //TODO fix form allowing invalid data in timeOfArrivalPicker
+
+        //creates input fields and sets their default values to be those of the flight being edited
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -746,6 +761,8 @@ TODO ===================================================
         timeOfDeparturePicker.addValueChangeListener(e -> {
             timeOfArrivalPicker.setEnabled(timeOfDeparturePicker.getValue() != null);
         });
+
+        //add fields to form
         formLayout.addFormRow(gliderField);
         formLayout.setColspan(gliderField, 2);
         formLayout.addFormRow(pilot1Field);
@@ -758,6 +775,7 @@ TODO ===================================================
         formLayout.addFormRow(timeOfArrivalPicker);
         formLayout.addFormRow(preFlightCheckupField);
 
+        //creates button to confirm edit execution
         Button editButton = new Button("Edit", e -> {
             Glider glider = gliderField.getValue();
             Pilot pilot1 = pilot1Field.getValue();
@@ -773,13 +791,17 @@ TODO ===================================================
             editForm.close();
             UI.getCurrent().getPage().reload();
         });
+        //creates button to cancel edit execution
         Button cancelButton = new Button("Cancel", e -> editForm.close());
+
+        //adds buttons, shows form
         editForm.getFooter().add(cancelButton, editButton);
         editForm.add(formLayout);
         editForm.open();
     }
 
     private void showFilterForm(GridListDataView<Flight> dataView) {
+        //creates UI elements to input filter requirements
         Dialog filterForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setAutoResponsive(true);
@@ -881,7 +903,10 @@ TODO ===================================================
         formLayout.addFormRow(new Span("Flight Duration"));
         formLayout.addFormRow(flightDurationHrsField, flightDurationMinsField);
         formLayout.addFormRow(preFlightCheckupField);
+
+        //creates buttons to confirm and cancel filtering
         Button confirmButton = new Button("Confirm", e -> {
+            //sets global filter variables
             gliderFilter = gliderField.getValue();
             pilot1Filter = pilot1Field.getValue();
             pilot2Filter = pilot2Field.getValue();
@@ -918,15 +943,19 @@ TODO ===================================================
             pointOfArrivalFilter = pointOfArrivalField.getValue();
             taskFilter = taskField.getValue();
             preFlightCheckupFilter = preFlightCheckupField.getValue();
+
             filterForm.close();
             dataView.refreshAll();
         });
         Button cancelButton = new Button("Cancel", e -> filterForm.close());
+
+        //adds all UI elements, shows form
         filterForm.add(formLayout);
         filterForm.getFooter().add(cancelButton, confirmButton);
         filterForm.open();
     }
 
+    //logic of flight editing, separate function to declutter code
     private void editFlightLogic(Flight flight, Glider glider, Pilot pilot1, Pilot pilot2, Date date, String pointOfDeparture, String pointOfArrival, LocalTime timeOfDeparture, LocalTime timeOfArrival, String task, String preFlightCheckup) {
         Time sqlTimeOfDeparture = null;
         if (timeOfDeparture != null) {
@@ -939,6 +968,8 @@ TODO ===================================================
         Flight editedFlight = new Flight(glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, sqlTimeOfDeparture, sqlTimeOfArrival, task, preFlightCheckup);
         boolean isActive;
         boolean isArchival;
+
+        //determine status
         try {
             if (timeOfDeparture == null) {
                 isActive = false;
@@ -950,6 +981,8 @@ TODO ===================================================
                 isActive = false;
                 isArchival = true;
             }
+
+            //calculate flight duration
             String hours;
             String minutes;
             PGInterval flightDuration = null;
@@ -970,6 +1003,7 @@ TODO ===================================================
                 }
             }
             PGInterval prevFlightTime = flight.getFlightTime();
+            //get all flights which might conflict with this one
             List<Flight> filteredByGlider = flightService.getArchivalFlightsByGliderAndDate(glider, date);
             List<Flight> filteredByPilot1 = flightService.getArchivalFlightsByPilotAndDate(pilot1, date);
             List<Flight> filteredByPilot2 = null;
@@ -977,6 +1011,7 @@ TODO ===================================================
                 filteredByPilot2 = flightService.getArchivalFlightsByPilotAndDate(pilot2, date);
             }
             if (flight.validateEdit(flight, filteredByGlider, filteredByPilot1, filteredByPilot2)) {
+                //checks if this flight doesn't violate any deadlines
                 String checkupChecker = flight.checkNextCheckup();
                 if (checkupChecker == null) {
                     flightService.editFlight(editedFlight);
@@ -1006,6 +1041,7 @@ TODO ===================================================
         }
     }
 
+    //updates pilots and glider to reflect the changes due to the flight changing
     private void flightEditingSynchronisation(Flight flight, Glider glider, boolean isArchival, PGInterval prevFlightTime, PGInterval flightDuration, boolean isActive, Flight editedFlight) {
         if (isArchival) {
             if (prevFlightTime != null) {
@@ -1063,8 +1099,10 @@ TODO ===================================================
         }
     }
 
+    //creates pdf document containing selected records
     private DownloadResponse exportRecords(List<Flight> flights) {
         try {
+            //HTML template for how the document looks
             String templateBegin = """
                     <!DOCTYPE html>
                     <html lang="en">
@@ -1193,12 +1231,13 @@ TODO ===================================================
                     </tr>
                     """;
             Flight first = flights.getFirst();
+
+            //builds HTML of the document
             SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
             String header = String.format(headerRow, first.getGlider().getType(),  first.getGlider().getRegistrationNumber(), sdf.format(first.getDate()), first.getGlider().getTotalFlightTime(), first.getGlider().getFlightCount());
             StringBuilder pdfHTML = new StringBuilder();
             pdfHTML.append(templateBegin);
             pdfHTML.append(header);
-//            for (int i = 0; i < flights.size(); i++) {
             int i = 1;
             for(final Flight flight : flights) {
 
@@ -1210,6 +1249,8 @@ TODO ===================================================
                 i++;
             }
             pdfHTML.append(templateEnd);
+
+            //create pdf file bytes
             byte[] pdfBytes;
             try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
                 PdfRendererBuilder builder = new PdfRendererBuilder();
@@ -1219,6 +1260,7 @@ TODO ===================================================
                 builder.run();
                 pdfBytes = os.toByteArray();
             }
+            //create download response downloading pdf file based on pdf bytes
             return new DownloadResponse(
                     new java.io.ByteArrayInputStream(pdfBytes),
                     first.getDate() + first.getGlider().getRegistrationNumber() + ".pdf",
@@ -1231,7 +1273,7 @@ TODO ===================================================
         }
     }
 
-
+    //navigates the display to this view
     public static void showView() {
         UI.getCurrent().navigate(FlightsView.class);
     }

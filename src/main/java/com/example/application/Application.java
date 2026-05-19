@@ -28,6 +28,7 @@ import java.util.Properties;
 public class Application implements AppShellConfigurator {
 
     public static void main(String[] args) {
+        //run Spring application
         SpringApplication.run(Application.class, args);
     }
 }

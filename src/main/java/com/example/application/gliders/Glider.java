@@ -102,6 +102,10 @@ public class Glider {
         this.id = id;
     }
 
+    public boolean isFlying() {
+        return isFlying;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj == null || !getClass().isAssignableFrom(obj.getClass())) {

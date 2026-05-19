@@ -89,38 +89,9 @@ public class PilotService {
                 ps.setBoolean(3, pilot.isFlying());
                 ps.setLong(4, pilot.getId());
                 ps.execute();
-            } catch (SQLException e) {
+        }
+        catch (SQLException e) {
                 throw new RuntimeException(e);
-            }
-//        if(!pilot.getName().equals(name)){
-//            String sql = "UPDATE pilots SET name = ? WHERE id = " + pilot.getId();
-//            try (Connection conn = dataSource.getConnection()) {
-//                PreparedStatement ps = conn.prepareStatement(sql);
-//                ps.setString(1, name);
-//                ps.execute();
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//        if(!pilot.getLicenseNumber().equals(name)){
-//            String sql = "UPDATE pilots SET license_number = ? WHERE id = " + pilot.getId();
-//            try (Connection conn = dataSource.getConnection()) {
-//                PreparedStatement ps = conn.prepareStatement(sql);
-//                ps.setString(1, licenseNumber);
-//                ps.execute();
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//        if (pilot.isFlying !=  isFlying){
-//            String sql = "UPDATE pilots SET is_flying = ? WHERE id = " + pilot.getId();
-//            try (Connection conn = dataSource.getConnection()) {
-//                PreparedStatement ps = conn.prepareStatement(sql);
-//                ps.setBoolean(1, isFlying);
-//                ps.execute();
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
+        }
     }
 }
