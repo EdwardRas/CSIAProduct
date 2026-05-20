@@ -966,6 +966,7 @@ public class FlightsView extends VerticalLayout {
             sqlTimeOfArrival = Time.valueOf(timeOfArrival);
         }
         Flight editedFlight = new Flight(glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, sqlTimeOfDeparture, sqlTimeOfArrival, task, preFlightCheckup);
+        editedFlight.setId(flight.getId());
         boolean isActive;
         boolean isArchival;
 

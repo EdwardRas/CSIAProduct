@@ -26,6 +26,7 @@ public class Flight {
     private String preFlightCheckup;
     private Glider glider;
 
+    //getters and setters
     public Pilot getPilot1() {
         return pilot1;
     }
@@ -114,9 +115,6 @@ public class Flight {
         this.glider = glider;
     }
 
-    public Flight() {
-    }
-
     public Long getId() {
         return id;
     }
@@ -125,13 +123,8 @@ public class Flight {
         this.id = id;
     }
 
-    public boolean isArchival() {
-        return isArchival;
-    }
-
-    public void setArchival(boolean archival) {
-        isArchival = archival;
-    }
+    //constructors as needed in the code
+    public Flight() {}
 
     public Flight(Glider glider, Pilot pilot1, Pilot pilot2, Date date, String pointOfDeparture, String pointOfArrival, Time timeOfDeparture, Time timeOfArrival, String task, String preFlightCheckup) {
         this.pilot1 = pilot1;
@@ -148,6 +141,7 @@ public class Flight {
 
     @Override
     public boolean equals(Object obj) {
+        // TODO change this to not rely on ID
         if (obj == null || !getClass().isAssignableFrom(obj.getClass())) {
             return false;
         }
@@ -159,6 +153,7 @@ public class Flight {
         return getId() != null && getId().equals(other.getId());
     }
 
+    //TODO probably delete since not used
     @Override
     public int hashCode() {
         // Hashcode should never change during the lifetime of an object. Because of
@@ -167,8 +162,12 @@ public class Flight {
         // problem.
         return getClass().hashCode();
     }
+
+    //validates if the flight conflicts with any other flights
     public boolean validateAddition(List<Flight> filteredByGlider, List<Flight> filteredByPilot1, List<Flight> filteredByPilot2) {
+        //if it's pre-made, then it can't conflict with anything
         if (isActive || isArchival) {
+            //if it's active, it can't have its pilots or gliders be flying
             if (isActive) {
                 if (pilot1.isFlying || glider.isFlying) {
                     return false;
@@ -179,6 +178,7 @@ public class Flight {
                     }
                 }
             }
+            //if there are flights on this day with this glider, pilot1 or pilot2, this flight cannot have departed during any such flight
             if (!filteredByGlider.isEmpty()) {
                 for (int i = 0; i < filteredByGlider.size(); i++) {
                     if (filteredByGlider.get(i).getTimeOfDeparture().before(timeOfDeparture) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfDeparture)) {
@@ -202,6 +202,8 @@ public class Flight {
                     }
                 }
             }
+
+            //it cannot have landed during any such flights either
             if (isArchival) {
                 if (!filteredByGlider.isEmpty()) {
                     for (int i = 0; i < filteredByGlider.size(); i++) {
@@ -228,8 +230,11 @@ public class Flight {
                 }
             }
         }
+        //if no conflicts were found, return true
         return true;
     }
+
+    //this method works the same way, except that it handles the fact that the old flight record could conflict with the new one
     public boolean validateEdit(Flight oldFlight, List<Flight> filteredByGlider, List<Flight> filteredByPilot1, List<Flight> filteredByPilot2) {
         if (isActive || isArchival) {
             if (isActive && !oldFlight.isActive) {
@@ -293,8 +298,13 @@ public class Flight {
         }
         return true;
     }
+
+    //this method checks whether this flight doesn't violate any checkup deadlines declared for its glider
     public String checkNextCheckup(){
+        //it outputs a string which contains info on all deadlines it violates or is close to validation
         String output = null;
+
+        //if the glider is already overdue in terms of hours, there is no point in checking if the flight adding flight time would violate this deadline
         if(glider.getNextCheckupHrs() != null){
             if (glider.getNextCheckupHrs().getHours() < glider.getTotalFlightTime().getHours() || (glider.getNextCheckupHrs().getHours() == glider.getTotalFlightTime().getHours()) && glider.getNextCheckupHrs().getMinutes() < glider.getTotalFlightTime().getMinutes()) {
                 output = "This glider is overdue for a checkup in terms of flight hours";
@@ -315,7 +325,8 @@ public class Flight {
                         } else {
                             output = "This glider is overdue for a checkup in terms of flight hours";
                         }
-                    } else if (glider.getNextCheckupHrs().getHours() < glider.getTotalFlightTime().getHours() + flightTime.getHours() + 1 + 10) {
+                    }
+                    else if (glider.getNextCheckupHrs().getHours() < glider.getTotalFlightTime().getHours() + flightTime.getHours() + 1 + 10) {
                         if (output != null) {
                             output = output + "\nCheckup in less than 10 hrs, next checkup at: " + glider.getNextCheckupHrs() + ", current flight time: " + glider.getTotalFlightTime() + ", flight duration: " + flightTime;
                         } else {
@@ -331,12 +342,16 @@ public class Flight {
                 }
             }
         }
+        //checks if flight violates date deadline
         if (glider.getNextCheckupDate() != null) {
-            if (output != null) {
-                output = output + "\nThis glider is overdue for a checkup in terms of date";
-            } else {
-                output = "This glider is overdue for a checkup in terms of date";
+            if(glider.getNextCheckupDate().before(date)) {
+                if (output != null) {
+                    output = output + "\nThis glider is overdue for a checkup in terms of date";
+                } else {
+                    output = "This glider is overdue for a checkup in terms of date";
+                }
             }
+            //TODO add else if clause o check if its close
         }
         if (glider.getNextCheckupFlights() != null) {
             if (glider.getNextCheckupFlights() < glider.getFlightCount() + 1) {

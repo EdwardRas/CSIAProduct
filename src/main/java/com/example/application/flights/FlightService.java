@@ -132,7 +132,8 @@ public class FlightService {
             throw new RuntimeException(e);
         }
     }
-    public void editFlight(Flight editedFlight) {
+    //TODO doesn't work
+    public void editFlight(Flight editedFlight) throws SQLException {
         Glider glider = editedFlight.getGlider();
         Pilot pilot1 = editedFlight.getPilot1();
         Pilot pilot2 = editedFlight.getPilot2();
@@ -144,15 +145,25 @@ public class FlightService {
         String task = editedFlight.getTask();
         String preFlightCheckup = editedFlight.getPreFlightCheckup();
         String status = "premade";
-        PGInterval flightTime;
+        PGInterval flightTime = null;
         if(timeOfArrival == null && timeOfDeparture != null){
             status = "active";
         }
         else if(timeOfArrival != null && timeOfDeparture != null){
             status = "archival";
-            flightTime = new PGInterval();
+            String hours;
+            String minutes;
+            if(timeOfArrival.getHours() - timeOfDeparture.getHours() > 0 && timeOfArrival.getMinutes() < timeOfDeparture.getMinutes()){
+                hours = String.valueOf(timeOfArrival.getHours() - timeOfDeparture.getHours() - 1);
+                minutes = String.valueOf(60 -  timeOfArrival.getMinutes() + timeOfDeparture.getMinutes());
+            }
+            else {
+                hours = String.valueOf(timeOfArrival.getHours() -  timeOfDeparture.getHours());
+                minutes = String.valueOf(timeOfArrival.getMinutes() - timeOfDeparture.getMinutes());
+            }
+            flightTime = new PGInterval(hours + " hours " +  minutes + " minutes");
         }
-        String sql = "UPDATE flights SET glider_id = ?, pilot_1_id = ?, pilot_2_id = ?, date = ?, time_of_departure = ?, time_of_arrival = ?, flight_duration = ?, point_of_departure = ?, point_of_arrival = ?, task = ?, pre_flight_checkup = ?, status = ? WHERE id = " + editedFlight.getId();
+        String sql = "UPDATE flights SET glider_id = ?, pilot_1_id = ?, pilot_2_id = ?, status = ?, date = ?, point_of_departure = ?, point_of_arrival = ?, time_of_departure = ?, time_of_arrival = ?, flight_duration = ?, task = ?, pre_flight_checkup = ? WHERE id = " + editedFlight.getId();
         try (Connection conn = dataSource.getConnection()) {
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setLong(1, glider.getId());
@@ -163,30 +174,15 @@ public class FlightService {
             else{
                 ps.setNull(3, Types.INTEGER);
             }
-            ps.setDate(4, date);
-            ps.setTime(5, timeOfDeparture);
-            ps.setTime(6, timeOfArrival);
-            if(status.equals("archival")) {
-                String hours;
-                String minutes;
-                if(timeOfArrival.getHours() - timeOfDeparture.getHours() > 0 && timeOfArrival.getMinutes() < timeOfDeparture.getMinutes()){
-                    hours = String.valueOf(timeOfArrival.getHours() - timeOfDeparture.getHours() - 1);
-                    minutes = String.valueOf(60 -  timeOfArrival.getMinutes() + timeOfDeparture.getMinutes());
-                }
-                else {
-                    hours = String.valueOf(timeOfArrival.getHours() -  timeOfDeparture.getHours());
-                    minutes = String.valueOf(timeOfArrival.getMinutes() - timeOfDeparture.getMinutes());
-                }
-                ps.setObject(7, new PGInterval(hours + " hours " +  minutes + " minutes"));
-            }
-            else {
-                ps.setObject(7, null);
-            }
-            ps.setString(8, pointOfDeparture);
-            ps.setString(9, pointOfArrival);
-            ps.setString(10, task);
-            ps.setString(11, preFlightCheckup);
-            ps.setString(12, status);
+            ps.setDate(5, date);
+            ps.setTime(8, timeOfDeparture);
+            ps.setTime(9, timeOfArrival);
+            ps.setObject(10, flightTime);
+            ps.setString(6, pointOfDeparture);
+            ps.setString(7, pointOfArrival);
+            ps.setString(11, task);
+            ps.setString(12, preFlightCheckup);
+            ps.setString(4, status);
             ps.execute();
         }
         catch (SQLException e) {
