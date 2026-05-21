@@ -22,8 +22,11 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.server.VaadinSession;
 import org.postgresql.util.PGInterval;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -31,8 +34,13 @@ import java.sql.*;
 import java.util.List;
 
 @Route("gliders")
-public class GlidersView extends VerticalLayout {
-
+public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
+    @Override
+    public void beforeEnter(BeforeEnterEvent e) {
+        if(!"user".equals(VaadinSession.getCurrent().getAttribute("username"))) {
+            e.rerouteTo(LoginView.class);
+        }
+    }
     //DB service objects
     private final GliderService gliderService;
     private final FlightService flightService;
@@ -197,8 +205,6 @@ public class GlidersView extends VerticalLayout {
 
     //shows user form to input addition data
     private void showAdditionForm(GliderService gliderService) throws SQLException {
-        //TODO fix form allowing invalid data in totalFilghtTime
-
         //create all UI elements for data input
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
@@ -259,6 +265,11 @@ public class GlidersView extends VerticalLayout {
 
         //create buttons to confirm and cancel addition
         Button addButton = new Button("Add", e -> {
+            //if any field has an invalid value, end lambda function early
+            if(regNumField.isEmpty() || flightCountField.isEmpty() || totalFlightTimeHrsField.isInvalid() || totalFlightTimeMinsField.isInvalid() || typeField.isEmpty() || nextCheckupHrsHrsField.isInvalid() || nextCheckupFlightsField.isInvalid() || nextCheckupHrsMinsField.isInvalid() || nextCheckupDateField.isInvalid()) {
+                Notification.show("At least one field value is invalid");
+                return;
+            }
             String regNum = regNumField.getValue();
             PGInterval totalFlightTime = null;
             try {
@@ -304,8 +315,6 @@ public class GlidersView extends VerticalLayout {
 
     //shows user form for record editing
     private void showEditForm(GliderService gliderService, Glider glider) throws SQLException {
-        //TODO fix form allowing invalid data in totalFilghtTime
-
         //create all UI elements for data input
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
@@ -372,6 +381,11 @@ public class GlidersView extends VerticalLayout {
 
         //create buttons to confirm and cancel record editing
         Button editButton = new Button("Edit", e -> {
+            //if any field has an invalid value, end lambda function early
+            if(regNumField.isEmpty() || flightCountField.isEmpty() || totalFlightTimeHrsField.isInvalid() || totalFlightTimeMinsField.isInvalid() || typeField.isEmpty() || nextCheckupHrsHrsField.isInvalid() || nextCheckupFlightsField.isInvalid() || nextCheckupHrsMinsField.isInvalid() || nextCheckupDateField.isInvalid()) {
+                Notification.show("At least one field value is invalid");
+                return;
+            }
             String regNum = regNumField.getValue();
             PGInterval totalFlightTime;
             try {
@@ -412,19 +426,6 @@ public class GlidersView extends VerticalLayout {
             glider.setNextCheckupDate(nextCheckupDate);
 
             gliderService.editGlider(glider);
-            try {
-                List<Flight> oldFlights = flightService.getFlightsByGlider(glider);
-                for(int i = 0; i < oldFlights.size(); i++) {
-                    Flight editedFlight;
-                    editedFlight = new Flight(glider, oldFlights.get(i).getPilot1(), oldFlights.get(i).getPilot2(), oldFlights.get(i).getDate(), oldFlights.get(i).getPointOfDeparture(), oldFlights.get(i).getPointOfArrival(), oldFlights.get(i).getTimeOfDeparture(), oldFlights.get(i).getTimeOfArrival(), oldFlights.get(i).getTask(), oldFlights.get(i).getPreFlightCheckup());
-                    flightService.editFlight(editedFlight);
-                }
-            } catch (SQLException ex) {
-                Notification notification = Notification
-                            .show("Error: " + ex.getErrorCode());
-                    notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-                throw new RuntimeException(ex);
-            }
             editForm.close();
             UI.getCurrent().getPage().reload();
         });

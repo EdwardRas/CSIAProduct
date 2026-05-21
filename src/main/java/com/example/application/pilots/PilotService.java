@@ -18,6 +18,8 @@ public class PilotService {
     public PilotService(DataSource dataSource) {
         this.dataSource = dataSource;
     }
+
+    //returns pilot with specified ID
     public Pilot findPilot(Long id){
         Pilot pilot = new Pilot();
         try (Connection conn = dataSource.getConnection()){
@@ -38,6 +40,7 @@ public class PilotService {
         }
         return null;
     }
+    //returns list of all pilots in DB
     public List<Pilot> getAllPilots(){
         List<Pilot> pilots = new ArrayList<>();
         try (

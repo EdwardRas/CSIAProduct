@@ -23,7 +23,7 @@ public class Glider {
     private Date nextCheckupDate;
 
     public boolean isFlying;
-
+    //constructors
     public Glider() {
     }
 
@@ -37,7 +37,7 @@ public class Glider {
         this.nextCheckupDate = nextCheckupDate;
         this.isFlying = isFlying;
     }
-
+    //getters and setters
     public Long getId() {
         return id;
     }
@@ -106,6 +106,7 @@ public class Glider {
         return isFlying;
     }
 
+    //function to determine if two gliders are the same (regNum is unique)
     @Override
     public boolean equals(Object obj) {
         if (obj == null || !getClass().isAssignableFrom(obj.getClass())) {

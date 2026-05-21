@@ -18,7 +18,7 @@ public class GliderService {
         this.dataSource = dataSource;
     }
 
-
+    //returns list of all gliders in DB
     public List<Glider> getAllGliders() {
         List<Glider> gliders = new ArrayList<>();
         try (
@@ -45,6 +45,7 @@ public class GliderService {
         return gliders;
     }
 
+    //returns glider with specified ID
     public Glider getGliderById(Long id) {
         Glider glider = new Glider();
         try (
@@ -69,6 +70,7 @@ public class GliderService {
         return glider;
     }
 
+    //adds row to gliders table in DB
     public void addGlider(String regNum, PGInterval totalFlightTime, int flightCount, String type, PGInterval nextCheckupHrs, Integer nextCheckupFlights, Date nextCheckupDate) {
         String sql = "INSERT INTO gliders (reg_number, total_flight_time, flight_count, type, next_checkup_hrs, next_checkup_flights, next_checkup_deadline) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = dataSource.getConnection()) {
@@ -86,6 +88,7 @@ public class GliderService {
         }
     }
 
+    //deletes row with specified ID from gliders table
     public void deleteGlider(Long id) {
         String sql = "DELETE FROM gliders WHERE id=?";
         try (Connection conn = dataSource.getConnection()) {
@@ -97,6 +100,7 @@ public class GliderService {
         }
     }
 
+    //edits row with specified ID in gliders table
     public void editGlider(Glider editedGlider) {
         String regNum = editedGlider.getRegistrationNumber();
         PGInterval totalFlightTime = editedGlider.getTotalFlightTime();

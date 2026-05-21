@@ -21,7 +21,10 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -29,7 +32,14 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Route("pilots")
-public class PilotsView extends VerticalLayout {
+public class PilotsView extends VerticalLayout implements BeforeEnterObserver {
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent e) {
+        if(!"user".equals(VaadinSession.getCurrent().getAttribute("username"))) {
+            e.rerouteTo(LoginView.class);
+        }
+    }
 
     //DB service objects
     private final PilotService pilotService;
@@ -170,7 +180,6 @@ public class PilotsView extends VerticalLayout {
 
     //show user form to input data for pilot addition
     private void showAdditionForm(PilotService pilotService) throws SQLException {
-        //TODO add field requirements verifier
         //create UI elements for data input
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
@@ -188,6 +197,11 @@ public class PilotsView extends VerticalLayout {
 
         //create buttons to confirm addition
         Button addButton = new Button("Add", e -> {
+            //if any field has an invalid value, end lambda function early
+            if(nameField.isEmpty()){
+                Notification.show("At least one field value is invalid");
+                return;
+            }
             String name = nameField.getValue();
             String licenseNumber = licenseNumberField.getValue();
             pilotService.addPilot(name, licenseNumber, false);
@@ -204,7 +218,6 @@ public class PilotsView extends VerticalLayout {
 
     //show user form to input data for pilot editing
     private void showEditForm(PilotService pilotService, Pilot pilot) throws SQLException {
-        //TODO add field requirements verifier
         //create UI elements for data input
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
@@ -224,25 +237,13 @@ public class PilotsView extends VerticalLayout {
 
         //create buttons to confirm addition
         Button addButton = new Button("Add", e -> {
+            if(nameField.isEmpty()){
+                Notification.show("At least one field value is invalid");
+                return;
+            }
             pilot.setName(nameField.getValue());
             pilot.setLicenseNumber(licenseNumberField.getValue());
             pilotService.editPilot(pilot);
-            try {
-                List<Flight> oldFlights = flightService.getFlightsByPilot(pilot);
-                for(int i = 0; i < oldFlights.size(); i++) {
-                    Flight editedFlight;
-                    if (oldFlights.get(i).getPilot1().equals(pilot)) {
-                        editedFlight = new Flight(oldFlights.get(i).getGlider(), pilot, oldFlights.get(i).getPilot2(), oldFlights.get(i).getDate(), oldFlights.get(i).getPointOfDeparture(), oldFlights.get(i).getPointOfArrival(), oldFlights.get(i).getTimeOfDeparture(), oldFlights.get(i).getTimeOfArrival(), oldFlights.get(i).getTask(), oldFlights.get(i).getPreFlightCheckup());
-                    } else {
-                        editedFlight = new Flight(oldFlights.get(i).getGlider(), oldFlights.get(i).getPilot1(), pilot, oldFlights.get(i).getDate(), oldFlights.get(i).getPointOfDeparture(), oldFlights.get(i).getPointOfArrival(), oldFlights.get(i).getTimeOfDeparture(), oldFlights.get(i).getTimeOfArrival(), oldFlights.get(i).getTask(), oldFlights.get(i).getPreFlightCheckup());
-                    }
-                    flightService.editFlight(editedFlight);
-                }
-            } catch (SQLException ex) {
-                Notification notification = Notification
-                        .show("Error: " + ex.getErrorCode());
-                throw new RuntimeException(ex);
-            }
             editForm.close();
             UI.getCurrent().getPage().reload();
         });

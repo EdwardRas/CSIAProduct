@@ -8,9 +8,11 @@ public class Pilot {
     private String licenseNumber;
     public boolean isFlying;
 
+    //constructor
     public Pilot() {
     }
 
+    //getters and setters
     public String getName() {
         return name;
     }
@@ -43,6 +45,8 @@ public class Pilot {
         isFlying = flying;
     }
 
+
+    //equals function relies on NAme as it is unique
     @Override
     public boolean equals(Object obj) {
         if (obj == null || !getClass().isAssignableFrom(obj.getClass())) {

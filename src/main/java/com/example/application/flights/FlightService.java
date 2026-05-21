@@ -27,6 +27,7 @@ public class FlightService {
         this.pilotService = pilotService;
     }
 
+    //returns list of all flights in DB
     public List<Flight> getAllFlights() {
         List<Flight> flights = new ArrayList<>();
         try (
@@ -41,6 +42,7 @@ public class FlightService {
                 flight.setPilot2(pilotService.findPilot(rs.getLong("pilot_2_id")));
                 flight.setGlider(gliderService.getGliderById(rs.getLong("glider_id")));
                 String status = rs.getString("status");
+                //determines isActive isArchival
                 if (status.equals("premade")) {
                     flight.isActive = false;
                     flight.isArchival = false;
@@ -71,7 +73,7 @@ public class FlightService {
         return flights;
     }
 
-
+    //adds new row into flights table
     public void addFlight(Flight flight) {
         String sql = "INSERT INTO flights (glider_id, pilot_1_id, pilot_2_id, status, date, point_of_departure, point_of_arrival, time_of_departure, time_of_arrival, flight_duration, task, pre_flight_checkup) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = dataSource.getConnection()) {
@@ -122,6 +124,7 @@ public class FlightService {
         }
     }
 
+    //deletes row of flights table based on ID
     public void deleteFlight(Long id) {
         String sql = "DELETE FROM flights WHERE id=?";
         try (Connection conn = dataSource.getConnection()) {
@@ -132,7 +135,7 @@ public class FlightService {
             throw new RuntimeException(e);
         }
     }
-    //TODO doesn't work
+    //edits one row in flights table
     public void editFlight(Flight editedFlight) throws SQLException {
         Glider glider = editedFlight.getGlider();
         Pilot pilot1 = editedFlight.getPilot1();
@@ -365,130 +368,7 @@ public class FlightService {
             }
         }*/
     }
-    public List<Flight> getFlightsByDate(Date date) throws SQLException {
-        List<Flight> flights = new ArrayList<>();
-        String sql = "SELECT * FROM flights WHERE date = ?";
-        try (Connection conn = dataSource.getConnection()) {
-            Flight flight = new Flight();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setObject(1, date);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                flight.setId(rs.getLong("id"));
-                flight.setPilot1(pilotService.findPilot(rs.getLong("pilot_1_id")));
-                flight.setPilot2(pilotService.findPilot(rs.getLong("pilot_2_id")));
-                flight.setGlider(gliderService.getGliderById(rs.getLong("glider_id")));
-                String status = rs.getString("status");
-                if (status.equals("premade")) {
-                    flight.isActive = false;
-                    flight.isArchival = false;
-                } else if (status.equals("active")) {
-                    flight.isActive = true;
-                    flight.isArchival = false;
-                } else if (status.equals("archival")) {
-                    flight.isArchival = true;
-                    flight.isActive = false;
-                }
-                flight.setDate(rs.getDate("date"));
-                flight.setPointOfDeparture(rs.getString("point_of_departure"));
-                flight.setPointOfArrival(rs.getString("point_of_arrival"));
-                if(!status.equals("premade")){
-                    flight.setTimeOfDeparture(rs.getTime("time_of_departure"));
-                    if(status.equals("archival")){
-                        flight.setTimeOfArrival(rs.getTime("time_of_arrival"));
-                    }
-                }
-                flight.setFlightTime((org.postgresql.util.PGInterval) rs.getObject("flight_duration"));
-                flight.setTask(rs.getString("task"));
-                flight.setPreFlightCheckup(rs.getString("pre_flight_checkup"));
-                flights.add(flight);
-            }
-        }
-        return flights;
-    }
-    public List<Flight> getFlightsByPilot(Pilot pilot) throws SQLException {
-        List<Flight> flights = new ArrayList<>();
-        String sql = "SELECT * FROM flights WHERE pilot_1_id = ? OR pilot_2_id = ?";
-        try (Connection conn = dataSource.getConnection()) {
-            Flight flight = new Flight();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setLong(1, pilot.getId());
-            ps.setLong(2, pilot.getId());
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                flight.setId(rs.getLong("id"));
-                flight.setPilot1(pilotService.findPilot(rs.getLong("pilot_1_id")));
-                flight.setPilot2(pilotService.findPilot(rs.getLong("pilot_2_id")));
-                flight.setGlider(gliderService.getGliderById(rs.getLong("glider_id")));
-                String status = rs.getString("status");
-                if (status.equals("premade")) {
-                    flight.isActive = false;
-                    flight.isArchival = false;
-                } else if (status.equals("active")) {
-                    flight.isActive = true;
-                    flight.isArchival = false;
-                } else if (status.equals("archival")) {
-                    flight.isArchival = true;
-                    flight.isActive = false;
-                }
-                flight.setDate(rs.getDate("date"));
-                flight.setPointOfDeparture(rs.getString("point_of_departure"));
-                flight.setPointOfArrival(rs.getString("point_of_arrival"));
-                if(!status.equals("premade")){
-                    flight.setTimeOfDeparture(rs.getTime("time_of_departure"));
-                    if(status.equals("archival")){
-                        flight.setTimeOfArrival(rs.getTime("time_of_arrival"));
-                    }
-                }
-                flight.setFlightTime((org.postgresql.util.PGInterval) rs.getObject("flight_duration"));
-                flight.setTask(rs.getString("task"));
-                flight.setPreFlightCheckup(rs.getString("pre_flight_checkup"));
-                flights.add(flight);
-            }
-        }
-        return flights;
-    }
-    public List<Flight> getFlightsByGlider(Glider glider) throws SQLException {
-        List<Flight> flights = new ArrayList<>();
-        String sql = "SELECT * FROM flights WHERE glider_id = ?";
-        try (Connection conn = dataSource.getConnection()) {
-            Flight flight = new Flight();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setLong(1, glider.getId());
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                flight.setId(rs.getLong("id"));
-                flight.setPilot1(pilotService.findPilot(rs.getLong("pilot_1_id")));
-                flight.setPilot2(pilotService.findPilot(rs.getLong("pilot_2_id")));
-                flight.setGlider(gliderService.getGliderById(rs.getLong("glider_id")));
-                String status = rs.getString("status");
-                if (status.equals("premade")) {
-                    flight.isActive = false;
-                    flight.isArchival = false;
-                } else if (status.equals("active")) {
-                    flight.isActive = true;
-                    flight.isArchival = false;
-                } else if (status.equals("archival")) {
-                    flight.isArchival = true;
-                    flight.isActive = false;
-                }
-                flight.setDate(rs.getDate("date"));
-                flight.setPointOfDeparture(rs.getString("point_of_departure"));
-                flight.setPointOfArrival(rs.getString("point_of_arrival"));
-                if(!status.equals("premade")){
-                    flight.setTimeOfDeparture(rs.getTime("time_of_departure"));
-                    if(status.equals("archival")){
-                        flight.setTimeOfArrival(rs.getTime("time_of_arrival"));
-                    }
-                }
-                flight.setFlightTime((org.postgresql.util.PGInterval) rs.getObject("flight_duration"));
-                flight.setTask(rs.getString("task"));
-                flight.setPreFlightCheckup(rs.getString("pre_flight_checkup"));
-                flights.add(flight);
-            }
-        }
-        return flights;
-    }
+    //returns all archival flights of specified glider on specified date, used in validation
     public List<Flight> getArchivalFlightsByGliderAndDate(Glider glider, Date date) throws SQLException {
         List<Flight> flights = new ArrayList<>();
         String sql = "SELECT * FROM flights WHERE (glider_id = ? AND date = ? AND status = 'archival')";
@@ -531,6 +411,7 @@ public class FlightService {
         }
         return flights;
     }
+    //returns all archival flights of specified pilot on specified date, used in validation
     public List<Flight> getArchivalFlightsByPilotAndDate(Pilot pilot, Date date) throws SQLException {
         List<Flight> flights = new ArrayList<>();
         String sql = "SELECT * FROM flights WHERE ((pilot_1_id = ? OR pilot_2_id = ?) AND date = ? and status = 'archival')";
@@ -574,6 +455,7 @@ public class FlightService {
         }
         return flights;
     }
+    //deletes all flights of specified glider, used in glider deletion
     public void deleteFlightByGliderId(long id) throws SQLException {
         String sql = "DELETE FROM flights WHERE glider_id=?";
         try (Connection conn = dataSource.getConnection()) {
@@ -584,6 +466,7 @@ public class FlightService {
             throw new RuntimeException(e);
         }
     }
+    //deletes all flights where specified pilot is Pilot 1 and deletes Pilot 2 from those where they are as pilot 2, used in pilot deletion
     public void modifyFlightByPilotId(long id) throws SQLException {
         String sql = "DELETE FROM flights WHERE pilot_1_id=?";
         try (Connection conn = dataSource.getConnection()) {
@@ -602,6 +485,7 @@ public class FlightService {
             throw new RuntimeException(e);
         };
     }
+    //finds flight by ID
     public Flight getFlightById(long id) throws SQLException {
         String sql = "SELECT * FROM flights WHERE id=?";
         Flight flight = new Flight();

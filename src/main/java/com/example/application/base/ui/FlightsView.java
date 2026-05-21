@@ -30,7 +30,10 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.data.value.ValueChangeMode;
+import com.vaadin.flow.router.BeforeEnterEvent;
+import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.DownloadResponse;
 import org.jsoup.Jsoup;
@@ -57,7 +60,7 @@ import java.util.List;
 import static com.vaadin.flow.component.notification.Notification.show;
 
 @Route("flights")
-public class FlightsView extends VerticalLayout {
+public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
 
     //DB service objects
     private final FlightService flightService;
@@ -81,8 +84,16 @@ public class FlightsView extends VerticalLayout {
     //gliderFilter is protected static so that it can be easily modified from GlidersView
     protected static Glider gliderFilter;
 
+    @Override
+    public void beforeEnter(BeforeEnterEvent e) {
+        if(!"user".equals(VaadinSession.getCurrent().getAttribute("username"))) {
+            e.rerouteTo(LoginView.class);
+        }
+    }
+
     @Autowired //automatically handles input variables
-    public FlightsView(FlightService flightService, GliderService gliderService, PilotService pilotService) {
+    public FlightsView(FlightService flightService, GliderService gliderService, PilotService pilotService)  {
+
         this.flightService = flightService;
         this.pilotService = pilotService;
         this.gliderService = gliderService;
@@ -195,6 +206,7 @@ public class FlightsView extends VerticalLayout {
                 String task = selectionModel.getSelectedItem().get().getTask();
                 String preFlightCheckup = selectionModel.getSelectedItem().get().getPreFlightCheckup();
                 editFlightLogic(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, timeOfDeparture,  timeOfArrival, task, preFlightCheckup);
+                UI.getCurrent().getPage().reload();
             }
         });
         //create button to land active flights
@@ -468,8 +480,6 @@ public class FlightsView extends VerticalLayout {
 
     //show form to input addition data
     private void showAdditionForm(GliderService gliderService, PilotService pilotService) throws SQLException {
-        //TODO fix form allowing invalid data in timeOfArrivalPicker
-
         //create input fields
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
@@ -477,8 +487,8 @@ public class FlightsView extends VerticalLayout {
         formLayout.setExpandFields(true);
         ComboBox<Glider> gliderField = new ComboBox<>();
         gliderField.setLabel("Glider");
-        gliderField.setRequired(true);
         gliderField.setItems(gliderService.getAllGliders());
+        gliderField.setRequired(true);
         gliderField.setItemLabelGenerator(Glider::getRegistrationNumber);
         formLayout.setColspan(gliderField, 2);
         ComboBox<Pilot> pilot1Field = new ComboBox<>();
@@ -537,6 +547,11 @@ public class FlightsView extends VerticalLayout {
 
         //create button to execute addition
         Button addButton = new Button("Add", e -> {
+            //if any field has an invalid value, end lambda function early
+            if(gliderField.isEmpty() || pilot1Field.isEmpty() || (!pilot2Field.isEmpty() && pilot2Field.getValue().equals(pilot1Field.getValue())) || timeOfArrivalPicker.isInvalid() || timeOfDeparturePicker.isInvalid() || pointOfDepartureField.isEmpty() || pointOfArrivalField.isEmpty() || dateField.isEmpty() || taskField.isEmpty() || preFlightCheckupField.isEmpty()) {
+                Notification.show("At least one field value is invalid");
+                return;
+            }
             Glider glider = gliderField.getValue();
             Pilot pilot1 = pilot1Field.getValue();
             Pilot pilot2 = pilot2Field.getValue();
@@ -777,6 +792,11 @@ public class FlightsView extends VerticalLayout {
 
         //creates button to confirm edit execution
         Button editButton = new Button("Edit", e -> {
+            //if any field has an invalid value, end lambda function early
+            if(gliderField.isEmpty() || pilot1Field.isEmpty() || (!pilot2Field.isEmpty() && pilot2Field.getValue().equals(pilot1Field.getValue())) || timeOfArrivalPicker.isInvalid() || timeOfDeparturePicker.isInvalid() || pointOfDepartureField.isEmpty() || pointOfArrivalField.isEmpty() || dateField.isEmpty() || taskField.isEmpty() || preFlightCheckupField.isEmpty()) {
+                Notification.show("At least one field value is invalid");
+                return;
+            }
             Glider glider = gliderField.getValue();
             Pilot pilot1 = pilot1Field.getValue();
             Pilot pilot2 = pilot2Field.getValue();
