@@ -1,0 +1,60 @@
+CREATE TABLE public.gliders (
+	id bigserial NOT NULL,
+	reg_number varchar(50) NOT NULL,
+	total_flight_time interval hour to minute NOT NULL,
+	flight_count int8 NOT NULL,
+	"type" varchar(255) NULL,
+	next_checkup_hrs interval hour to minute NULL,
+	next_checkup_flights int4 NULL,
+	next_checkup_deadline date NULL,
+	is_flying bool DEFAULT false NOT NULL,
+	CONSTRAINT gliders_pk PRIMARY KEY (id),
+	CONSTRAINT gliders_u1 UNIQUE (reg_number)
+);
+
+
+-- public.pilots definition
+
+-- Drop table
+
+-- DROP TABLE public.pilots;
+
+CREATE TABLE public.pilots (
+	id bigserial NOT NULL,
+	"name" varchar(255) NOT NULL,
+	license_number varchar(100) NULL,
+	is_flying bool NOT NULL,
+	CONSTRAINT pilots_pk PRIMARY KEY (id)
+);
+
+
+-- public.flights definition
+
+-- Drop table
+
+-- DROP TABLE public.flights;
+
+CREATE TABLE public.flights (
+	id bigserial NOT NULL,
+	glider_id int8 NOT NULL,
+	pilot_1_id int8 NOT NULL,
+	pilot_2_id int8 NULL,
+	status varchar(10) NOT NULL,
+	"date" date NOT NULL,
+	point_of_departure varchar(255) NOT NULL,
+	point_of_arrival varchar(255) NOT NULL,
+	time_of_departure time NULL,
+	time_of_arrival time NULL,
+	flight_duration interval hour to minute NULL,
+	task varchar(255) DEFAULT 'X/1'::character varying NOT NULL,
+	pre_flight_checkup varchar(255) NOT NULL,
+	CONSTRAINT flights_pk PRIMARY KEY (id),
+	CONSTRAINT flights_gliders_fk FOREIGN KEY (glider_id) REFERENCES public.gliders(id),
+	CONSTRAINT flights_pilots_fk_1 FOREIGN KEY (pilot_1_id) REFERENCES public.pilots(id),
+	CONSTRAINT flights_pilots_fk_2 FOREIGN KEY (pilot_2_id) REFERENCES public.pilots(id)
+);
+
+CREATE INDEX flights_glider_id_idx ON public.flights (glider_id,status,"date");
+
+CREATE INDEX flights_pilot_1_id_idx ON public.flights (pilot_1_id,pilot_2_id,"date",status);
+
