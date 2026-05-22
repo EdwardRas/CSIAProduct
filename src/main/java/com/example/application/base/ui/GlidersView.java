@@ -1,9 +1,7 @@
 package com.example.application.base.ui;
-import com.example.application.flights.Flight;
 import com.example.application.flights.FlightService;
 import com.example.application.gliders.Glider;
 import com.example.application.gliders.GliderService;
-import com.example.application.pilots.Pilot;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
@@ -22,25 +20,17 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.component.grid.Grid;
-import com.vaadin.flow.server.VaadinSession;
 import org.postgresql.util.PGInterval;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.sql.*;
 import java.util.List;
 
-@Route("gliders")
-public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
-    @Override
-    public void beforeEnter(BeforeEnterEvent e) {
-        if(!"user".equals(VaadinSession.getCurrent().getAttribute("username"))) {
-            e.rerouteTo(LoginView.class);
-        }
-    }
+@Route(value = "gliders", layout =  MainLayout.class)
+@Menu(order = 1, icon = "vaadin:airplane")public class GlidersView extends VerticalLayout{
     //DB service objects
     private final GliderService gliderService;
     private final FlightService flightService;
@@ -91,7 +81,10 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
         //create search text field
         TextField searchField = new TextField();
         searchField.setWidth("250px");
-        searchField.setLabel("Search");
+        searchField.setPlaceholder("Search");
+        searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
+        searchField.setValueChangeMode(ValueChangeMode.EAGER);
+        searchField.addValueChangeListener(e -> dataView.refreshAll());
 
         //create button to display addition form
         Button addButton = new Button("Add Glider", e -> {
@@ -127,8 +120,8 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
                     deleteDialog.setConfirmButtonTheme("error primary");
                     deleteDialog.addConfirmListener(event -> {
                         try {
-                            gliderService.deleteGlider(deletingId);
                             flightService.deleteFlightByGliderId(deletingId);
+                            gliderService.deleteGlider(deletingId);
                             UI.getCurrent().getPage().reload();
                         } catch (SQLException ex) {
                             Notification notification = Notification
@@ -173,9 +166,6 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
         editButton.setEnabled(false);
 
         //search functionality
-        searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
-        searchField.setValueChangeMode(ValueChangeMode.EAGER);
-        searchField.addValueChangeListener(e -> dataView.refreshAll());
         dataView.addFilter(item -> {
             String searchTerm = searchField.getValue().trim();
 
@@ -194,11 +184,13 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
             return matchesID || matchesRegNum || matchesNextCheckupHrs || matchesTotalFlightTime || matchesFlightCount || matchesType || matchesNextCheckupFlights || matchesNextCheckupDate;
         });
 
+        addButton.setPrefixComponent(new Icon(VaadinIcon.FILE_ADD));
+        deleteButton.setPrefixComponent(new Icon(VaadinIcon.TRASH));
+        editButton.setPrefixComponent(new Icon(VaadinIcon.EDIT));
+
         //add all UI elements
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
-        buttonsLayout.add(new Button("Flights", e -> FlightsView.showView()));
-        buttonsLayout.add(new Button("Pilots", e -> PilotsView.showView()));
         buttonsLayout.add(searchField, addButton, deleteButton, editButton);
         add(buttonsLayout, grid);
     }
@@ -208,12 +200,16 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
         //create all UI elements for data input
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
-        formLayout.setAutoResponsive(true);
-        formLayout.setExpandFields(true);
+        formLayout.setSizeFull();
+        formLayout.setMaxWidth("400px");
+        formLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("500px", 2)
+        );
         TextField regNumField = new TextField();
         regNumField.setLabel("Registration Number");
         regNumField.setRequired(true);
-        formLayout.setColspan(regNumField, 2);
+        regNumField.setSizeFull();
         IntegerField totalFlightTimeHrsField = new IntegerField();
         totalFlightTimeHrsField.setLabel("Hours");
         totalFlightTimeHrsField.setMin(0);
@@ -227,10 +223,11 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
         flightCountField.setLabel("Flight Count");
         flightCountField.setRequired(true);
         flightCountField.setMin(0);
-        formLayout.setColspan(flightCountField, 2);
+        flightCountField.setSizeFull();
         TextField typeField = new TextField();
         typeField.setLabel("Type");
-        formLayout.setColspan(typeField, 2);
+        typeField.setSizeFull();
+        typeField.setRequired(true);
         IntegerField nextCheckupHrsHrsField = new IntegerField();
         nextCheckupHrsHrsField.setLabel("Hours");
         nextCheckupHrsHrsField.setMin(0);
@@ -248,18 +245,32 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
         nextCheckupFlightsField.setLabel("Next Checkup in Flights");
         nextCheckupFlightsField.setMin(0);
         flightCountField.addValueChangeListener(e -> {nextCheckupFlightsField.setMin(e.getValue());});
-        formLayout.setColspan(nextCheckupFlightsField, 2);
+        nextCheckupFlightsField.setSizeFull();
         DatePicker nextCheckupDateField = new DatePicker();
         nextCheckupDateField.setLabel("Next Checkup Deadline");
-        formLayout.setColspan(nextCheckupDateField, 2);
+        nextCheckupDateField.setSizeFull();
         formLayout.addFormRow(regNumField);
-        formLayout.setColspan(regNumField, 2);
+        regNumField.setSizeFull();
+        formLayout.addFormRow(regNumField);
+        regNumField.setSizeFull();
         formLayout.addFormRow(typeField);
-        formLayout.addFormRow(new Span("Total Flight Time"));
-        formLayout.addFormRow(totalFlightTimeHrsField, totalFlightTimeMinsField);
+        Span totalFlightTimeTitle = new Span("Total Flight Time");
+        totalFlightTimeTitle.setSizeFull();
+        formLayout.addFormRow(totalFlightTimeTitle);
+        HorizontalLayout totalFlightTimeLayout = new HorizontalLayout();
+        totalFlightTimeLayout.add(totalFlightTimeHrsField, totalFlightTimeMinsField);
+        totalFlightTimeLayout.setSpacing(true);
+        totalFlightTimeLayout.setSizeFull();
+        formLayout.addFormRow(totalFlightTimeLayout);
         formLayout.addFormRow(flightCountField);
-        formLayout.addFormRow(new Span("Next Checkup in Hours"));
-        formLayout.addFormRow(nextCheckupHrsHrsField, nextCheckupHrsMinsField);
+        Span checkupHrsTitle = new Span("Next Checkup in Hours");
+        checkupHrsTitle.setSizeFull();
+        formLayout.addFormRow(checkupHrsTitle);
+        HorizontalLayout nextChecukpHrsLayout = new HorizontalLayout();
+        nextChecukpHrsLayout.add(nextCheckupHrsHrsField, nextCheckupHrsMinsField);
+        nextChecukpHrsLayout.setSpacing(true);
+        nextChecukpHrsLayout.setSizeFull();
+        formLayout.addFormRow(nextChecukpHrsLayout);
         formLayout.addFormRow(nextCheckupFlightsField);
         formLayout.addFormRow(nextCheckupDateField);
 
@@ -318,13 +329,17 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
         //create all UI elements for data input
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
-        formLayout.setAutoResponsive(true);
-        formLayout.setExpandFields(true);
+        formLayout.setSizeFull();
+        formLayout.setMaxWidth("400px");
+        formLayout.setResponsiveSteps(
+            new FormLayout.ResponsiveStep("0", 1),
+            new FormLayout.ResponsiveStep("500px", 2)
+        );
         TextField regNumField = new TextField();
         regNumField.setLabel("Registration Number");
         regNumField.setRequired(true);
         regNumField.setValue(glider.getRegistrationNumber());
-        formLayout.setColspan(regNumField, 2);
+        regNumField.setSizeFull();
         IntegerField totalFlightTimeHrsField = new IntegerField();
         totalFlightTimeHrsField.setLabel("Hours");
         totalFlightTimeHrsField.setMin(0);
@@ -341,10 +356,10 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
         flightCountField.setRequired(true);
         flightCountField.setMin(0);
         flightCountField.setValue(glider.getFlightCount());
-        formLayout.setColspan(flightCountField, 2);
+        flightCountField.setSizeFull();
         TextField typeField = new TextField();
         typeField.setLabel("Type");
-        formLayout.setColspan(typeField, 2);
+        typeField.setSizeFull();
         typeField.setValue(glider.getType());
         IntegerField nextCheckupHrsHrsField = new IntegerField();
         nextCheckupHrsHrsField.setLabel("Hours");
@@ -361,21 +376,33 @@ public class GlidersView extends VerticalLayout implements BeforeEnterObserver {
         nextCheckupFlightsField.setLabel("Next Checkup in Flights");
         nextCheckupFlightsField.setMin(0);
         nextCheckupFlightsField.setValue(glider.getNextCheckupFlights());
-        formLayout.setColspan(nextCheckupFlightsField, 2);
+        nextCheckupFlightsField.setSizeFull();
         DatePicker nextCheckupDateField = new DatePicker();
         nextCheckupDateField.setLabel("Next Checkup Deadline");
         if (glider.getNextCheckupDate() != null) {
             nextCheckupDateField.setValue(glider.getNextCheckupDate().toLocalDate());
         }
-        formLayout.setColspan(nextCheckupDateField, 2);
+        nextCheckupDateField.setSizeFull();
         formLayout.addFormRow(regNumField);
-        formLayout.setColspan(regNumField, 2);
+        regNumField.setSizeFull();
         formLayout.addFormRow(typeField);
-        formLayout.addFormRow(new Span("Total Flight Time"));
-        formLayout.addFormRow(totalFlightTimeHrsField, totalFlightTimeMinsField);
+        Span totalFlightTimeTitle = new Span("Total Flight Time");
+        totalFlightTimeTitle.setSizeFull();
+        formLayout.addFormRow(totalFlightTimeTitle);
+        HorizontalLayout totalFlightTimeLayout = new HorizontalLayout();
+        totalFlightTimeLayout.add(totalFlightTimeHrsField, totalFlightTimeMinsField);
+        totalFlightTimeLayout.setSpacing(true);
+        totalFlightTimeLayout.setSizeFull();
+        formLayout.addFormRow(totalFlightTimeLayout);
         formLayout.addFormRow(flightCountField);
-        formLayout.addFormRow(new Span("Next Checkup in Hours"));
-        formLayout.addFormRow(nextCheckupHrsHrsField, nextCheckupHrsMinsField);
+        Span checkupHrsTitle = new Span("Next Checkup in Hours");
+        checkupHrsTitle.setSizeFull();
+        formLayout.addFormRow(checkupHrsTitle);
+        HorizontalLayout nextChecukpHrsLayout = new HorizontalLayout();
+        nextChecukpHrsLayout.add(nextCheckupHrsHrsField, nextCheckupHrsMinsField);
+        nextChecukpHrsLayout.setSpacing(true);
+        nextChecukpHrsLayout.setSizeFull();
+        formLayout.addFormRow(nextChecukpHrsLayout);
         formLayout.addFormRow(nextCheckupFlightsField);
         formLayout.addFormRow(nextCheckupDateField);
 

@@ -23,6 +23,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
@@ -32,6 +33,7 @@ import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.streams.DownloadHandler;
@@ -59,9 +61,9 @@ import java.util.List;
 
 import static com.vaadin.flow.component.notification.Notification.show;
 
-@Route("flights")
-public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
-
+@Route(value = "flights", layout =  MainLayout.class)
+@Menu(order = 0, icon = "vaadin:flight-takeoff")
+public class FlightsView extends VerticalLayout  {
     //DB service objects
     private final FlightService flightService;
     private final PilotService pilotService;
@@ -83,13 +85,8 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
     private String preFlightCheckupFilter;
     //gliderFilter is protected static so that it can be easily modified from GlidersView
     protected static Glider gliderFilter;
+    private UI currentUI;
 
-    @Override
-    public void beforeEnter(BeforeEnterEvent e) {
-        if(!"user".equals(VaadinSession.getCurrent().getAttribute("username"))) {
-            e.rerouteTo(LoginView.class);
-        }
-    }
 
     @Autowired //automatically handles input variables
     public FlightsView(FlightService flightService, GliderService gliderService, PilotService pilotService)  {
@@ -102,6 +99,16 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         List<Flight> records = this.flightService.getAllFlights();
         //Create gird display element
         Grid<Flight> grid = new Grid<>();
+        //Hides sorting buttons while not hovering over them
+        com.vaadin.flow.dom.Element styleElement = new com.vaadin.flow.dom.Element("style");
+        styleElement.setText("vaadin-grid-sorter:not([direction]):not(:hover)::part(indicators) {\n" +
+                "    color: rgb(255 255 255 / 52%) !important;\n" +
+                "}\n" +
+                "vaadin-grid-cell-content:hover vaadin-grid-sorter:not([direction])::part(indicators) {\n" +
+                "    color: #cccccc !important;\n" +
+                "    opacity: 1 !important;\n" +
+                "}");
+        UI.getCurrent().getElement().appendChild(styleElement);
         grid.setSelectionMode(Grid.SelectionMode.SINGLE);
         Grid.Column<Flight> IDColumn = grid
                 .addColumn(Flight::getId).setHeader("ID")
@@ -163,7 +170,7 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
                 throw new RuntimeException(ex);
             }
         });
-
+        addButton.setPrefixComponent(new Icon(VaadinIcon.FILE_ADD));
         //gets selection model for flight selection to get selected item in grid
         GridSingleSelectionModel<Flight> selectionModel = (GridSingleSelectionModel<Flight>)grid.getSelectionModel();
 
@@ -179,6 +186,8 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
             }
         });
 
+        deleteButton.setPrefixComponent(new Icon(VaadinIcon.TRASH));
+
         //create button to edit flights
         Button editButton = new Button("Edit Flight", e -> {
             if (selectionModel.getSelectedItem().isPresent()) {
@@ -190,6 +199,8 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
                 }
             }
         });
+
+        editButton.setPrefixComponent(new Icon(VaadinIcon.EDIT));
 
         //create button to launch premade flights
         Button launchButton = new Button("Launch", e -> {
@@ -209,6 +220,9 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
                 UI.getCurrent().getPage().reload();
             }
         });
+
+        launchButton.setPrefixComponent(new Icon(VaadinIcon.FLIGHT_TAKEOFF));
+
         //create button to land active flights
         Button landButton = new Button("Land", e -> {
             if(selectionModel.getSelectedItem().isPresent() && selectionModel.getSelectedItem().get().isActive){
@@ -228,7 +242,10 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
             }
         });
 
+        landButton.setPrefixComponent(new Icon(VaadinIcon.FLIGHT_LANDING));
+
         Button filterButton = new Button("Filter", e -> showFilterForm(dataView));
+        filterButton.setPrefixComponent(new Icon(VaadinIcon.FILTER));
 
         //add listener entity to check when the selection on the grid changes
         grid.addSelectionListener(e -> {
@@ -385,12 +402,10 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
 
         //create button to export records
         Button exportButton = new Button("Export", e -> {showExportDialog(gliderService, flightService);});
-
+        exportButton.setPrefixComponent(new Icon(VaadinIcon.DOWNLOAD_ALT));
         //add all UI elements
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
-        buttonsLayout.add(new Button("Gliders", e -> GlidersView.showView()));
-        buttonsLayout.add(new Button("Pilots", e -> PilotsView.showView()));
         buttonsLayout.add(addButton, deleteButton, editButton, searchField, filterButton, launchButton, landButton, exportButton);
         add(buttonsLayout, tabs, grid);
 
@@ -400,8 +415,12 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         //creates form and all its data entry fields
         Dialog exportForm = new Dialog();
         FormLayout formLayout = new FormLayout();
-        formLayout.setAutoResponsive(true);
-        formLayout.setExpandFields(true);
+        formLayout.setSizeFull();
+        formLayout.setMaxWidth("400px");
+        formLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("500px",2 )
+        );
         ComboBox<Glider> gliderField = new ComboBox<>();
         gliderField.setLabel("Glider");
         gliderField.setRequired(true);
@@ -410,27 +429,59 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         if(gliderFilter != null){
             gliderField.setValue(gliderFilter);
         }
-        formLayout.setColspan(gliderField, 2);
+        gliderField.setSizeFull();
         DatePicker datePicker = new DatePicker();
         datePicker.setLabel("Date");
         datePicker.setRequired(true);
         if(dateFilter != null){
             datePicker.setValue(dateFilter.toLocalDate());
         }
-        formLayout.setColspan(datePicker, 2);
+        datePicker.setSizeFull();
         Button downloadButton = new Button("Confirm", e -> exportForm.close());
         Button cancelButton = new Button("Cancel", e -> exportForm.close());
 
-        //download logic
-        DownloadHandler csvResource = DownloadHandler.fromInputStream(d -> {
-            Glider glider = gliderField.getValue();
-            Date date = Date.valueOf(datePicker.getValue());
-            try {
-                return exportRecords(flightService.getArchivalFlightsByGliderAndDate(glider, date));
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
+        final List<Flight> flights = new ArrayList<>();
+
+        currentUI = UI.getCurrent();
+        downloadButton.setEnabled(gliderField.getValue() != null && datePicker.getValue() != null);
+        gliderField.addValueChangeListener(e -> {
+            downloadButton.setEnabled(gliderField.getValue() != null && datePicker.getValue() != null);
+            flights.clear();
+            if(downloadButton.isEnabled()) {
+                Glider glider = gliderField.getValue();
+                Date date = Date.valueOf(datePicker.getValue());
+                try {
+                    flights.addAll(flightService.getArchivalFlightsByGliderAndDate(glider, date));
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+                if(flights.isEmpty()) {
+                    Notification.show("No flights found");
+                    downloadButton.setEnabled(false);
+                }
             }
         });
+        datePicker.addValueChangeListener(e -> {
+            downloadButton.setEnabled(gliderField.getValue() != null && datePicker.getValue() != null);
+            flights.clear();
+            if(downloadButton.isEnabled()) {
+                Glider glider = gliderField.getValue();
+                Date date = Date.valueOf(datePicker.getValue());
+                try {
+                    flights.addAll(flightService.getArchivalFlightsByGliderAndDate(glider, date));
+                } catch (SQLException ex) {
+                    throw new RuntimeException(ex);
+                }
+                if(flights.isEmpty()) {
+                    Notification.show("No flights found");
+                    downloadButton.setEnabled(false);
+                }
+            }
+        });
+
+
+        //download logic
+        DownloadHandler csvResource = DownloadHandler.fromInputStream(d -> exportRecords(flights));
         Anchor downloadAnchor = new Anchor(csvResource, "");
         downloadAnchor.getElement().setAttribute("download", true);
         downloadAnchor.add(downloadButton);
@@ -440,6 +491,8 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         formLayout.addFormRow(datePicker);
         exportForm.getFooter().add(cancelButton, downloadAnchor);
         exportForm.add(formLayout);
+        Scroller scroller = new Scroller(formLayout);
+        exportForm.add(scroller);
         exportForm.open();
 
     }
@@ -483,53 +536,57 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         //create input fields
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
-        formLayout.setAutoResponsive(true);
-        formLayout.setExpandFields(true);
+        formLayout.setSizeFull();
+        formLayout.setMaxWidth("400px");
+        formLayout.setResponsiveSteps(
+            new FormLayout.ResponsiveStep("0", 1),
+            new FormLayout.ResponsiveStep("500px", 2)
+        );
         ComboBox<Glider> gliderField = new ComboBox<>();
         gliderField.setLabel("Glider");
         gliderField.setItems(gliderService.getAllGliders());
         gliderField.setRequired(true);
         gliderField.setItemLabelGenerator(Glider::getRegistrationNumber);
-        formLayout.setColspan(gliderField, 2);
+        gliderField.setSizeFull();
         ComboBox<Pilot> pilot1Field = new ComboBox<>();
         pilot1Field.setLabel("Pilot 1");
         pilot1Field.setItems(pilotService.getAllPilots());
         pilot1Field.setRequired(true);
         pilot1Field.setItemLabelGenerator(Pilot::getName);
-        formLayout.setColspan(pilot1Field, 2);
+        pilot1Field.setSizeFull();
         ComboBox<Pilot> pilot2Field = new ComboBox<>();
         pilot2Field.setLabel("Pilot 2");
         pilot2Field.setItems(pilotService.getAllPilots());
         pilot2Field.setItemLabelGenerator(Pilot::getName);
-        formLayout.setColspan(pilot2Field, 2);
+        pilot2Field.setSizeFull();
         TimePicker timeOfDeparturePicker = new TimePicker();
         timeOfDeparturePicker.setLabel("Time of departure (UTC)");
         TimePicker timeOfArrivalPicker = new TimePicker();
         timeOfDeparturePicker.addValueChangeListener(e -> timeOfArrivalPicker.setMin(e.getValue()));
         timeOfArrivalPicker.addValueChangeListener(e -> timeOfDeparturePicker.setMax(e.getValue()));
         timeOfArrivalPicker.setLabel("Time of arrival (UTC)");
-        formLayout.setColspan(timeOfDeparturePicker, 2);
-        formLayout.setColspan(timeOfArrivalPicker, 2);
+        timeOfDeparturePicker.setSizeFull();
+        timeOfArrivalPicker.setSizeFull();
         timeOfArrivalPicker.setEnabled(false);
         TextField pointOfDepartureField = new TextField();
         pointOfDepartureField.setLabel("Point of departure");
-        formLayout.setColspan(pointOfDepartureField, 2);
+        pointOfDepartureField.setSizeFull();
         pointOfDepartureField.setRequired(true);
         TextField pointOfArrivalField = new TextField();
         pointOfArrivalField.setLabel("Point of arrival");
-        formLayout.setColspan(pointOfArrivalField, 2);
+        pointOfArrivalField.setSizeFull();
         pointOfArrivalField.setRequired(true);
         DatePicker dateField = new DatePicker();
         dateField.setLabel("Date");
-        formLayout.setColspan(dateField, 2);
+        dateField.setSizeFull();
         dateField.setRequired(true);
         TextField taskField = new TextField();
         taskField.setLabel("Task");
-        formLayout.setColspan(taskField, 2);
+        taskField.setSizeFull();
         taskField.setRequired(true);
         TextField preFlightCheckupField = new TextField();
         preFlightCheckupField.setLabel("Pre Flight Checkup");
-        formLayout.setColspan(preFlightCheckupField, 2);
+        preFlightCheckupField.setSizeFull();
         preFlightCheckupField.setRequired(true);
         timeOfDeparturePicker.addValueChangeListener(e -> timeOfArrivalPicker.setEnabled(timeOfDeparturePicker.getValue() != null));
 
@@ -685,6 +742,8 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         //add buttons and open form
         additionForm.getFooter().add(cancelButton, addButton);
         additionForm.add(formLayout);
+        Scroller scroller = new Scroller(formLayout);
+        additionForm.add(scroller);
         additionForm.open();
 
     }
@@ -706,33 +765,36 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
 
     //shows form to input edit data
     private void showEditForm(GliderService gliderService, PilotService pilotService, Flight flight) throws SQLException {
-        //TODO fix form allowing invalid data in timeOfArrivalPicker
 
         //creates input fields and sets their default values to be those of the flight being edited
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
-        formLayout.setAutoResponsive(true);
-        formLayout.setExpandFields(true);
+        formLayout.setSizeFull();
+        formLayout.setMaxWidth("400px");
+        formLayout.setResponsiveSteps(
+            new FormLayout.ResponsiveStep("0", 1),
+            new FormLayout.ResponsiveStep("500px", 2)
+        );
         ComboBox<Glider> gliderField = new ComboBox<>();
         gliderField.setLabel("Glider");
         gliderField.setRequired(true);
         gliderField.setItems(gliderService.getAllGliders());
         gliderField.setItemLabelGenerator(Glider::getRegistrationNumber);
         gliderField.setValue(flight.getGlider());
-        formLayout.setColspan(gliderField, 2);
+        gliderField.setSizeFull();
         ComboBox<Pilot> pilot1Field = new ComboBox<>();
         pilot1Field.setLabel("Pilot 1");
         pilot1Field.setItems(pilotService.getAllPilots());
         pilot1Field.setRequired(true);
         pilot1Field.setValue(flight.getPilot1());
         pilot1Field.setItemLabelGenerator(Pilot::getName);
-        formLayout.setColspan(pilot1Field, 2);
+        pilot1Field.setSizeFull();
         ComboBox<Pilot> pilot2Field = new ComboBox<>();
         pilot2Field.setLabel("Pilot 2");
         pilot2Field.setItems(pilotService.getAllPilots());
         pilot2Field.setValue(flight.getPilot2());
         pilot2Field.setItemLabelGenerator(Pilot::getName);
-        formLayout.setColspan(pilot2Field, 2);
+        pilot2Field.setSizeFull();
         TimePicker timeOfDeparturePicker = new TimePicker();
         timeOfDeparturePicker.setLabel("Time of departure (UTC)");
         if(flight.getTimeOfDeparture()!=null) {
@@ -743,35 +805,35 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         if(flight.getTimeOfArrival()!=null) {
             timeOfArrivalPicker.setValue(LocalTime.of(flight.getTimeOfArrival().getHours(), flight.getTimeOfArrival().getMinutes()));
         }
-        formLayout.setColspan(timeOfDeparturePicker, 2);
-        formLayout.setColspan(timeOfArrivalPicker, 2);
+        timeOfDeparturePicker.setSizeFull();
+        timeOfArrivalPicker.setSizeFull();
         timeOfArrivalPicker.setEnabled(timeOfDeparturePicker.getValue() != null);
         TextField pointOfDepartureField = new TextField();
         pointOfDepartureField.setLabel("Point of departure");
         pointOfDepartureField.setValue(flight.getPointOfDeparture());
-        formLayout.setColspan(pointOfDepartureField, 2);
+        pointOfDepartureField.setSizeFull();
         pointOfDepartureField.setRequired(true);
         TextField pointOfArrivalField = new TextField();
         pointOfArrivalField.setLabel("Point of arrival");
-        formLayout.setColspan(pointOfArrivalField, 2);
+        pointOfArrivalField.setSizeFull();
         pointOfArrivalField.setRequired(true);
         pointOfArrivalField.setValue(flight.getPointOfArrival());
         timeOfDeparturePicker.addValueChangeListener(e -> timeOfArrivalPicker.setMin(e.getValue()));
         timeOfArrivalPicker.addValueChangeListener(e -> timeOfDeparturePicker.setMax(e.getValue()));
         DatePicker dateField = new DatePicker();
         dateField.setLabel("Date");
-        formLayout.setColspan(dateField, 2);
+        dateField.setSizeFull();
         dateField.setRequired(true);
         dateField.setValue(flight.getDate().toLocalDate());
         TextField taskField = new TextField();
         taskField.setLabel("Task");
         taskField.setValue(flight.getTask());
-        formLayout.setColspan(taskField, 2);
+        taskField.setSizeFull();
         taskField.setRequired(true);
         TextField preFlightCheckupField = new TextField();
         preFlightCheckupField.setLabel("Pre Flight Checkup");
         preFlightCheckupField.setValue(flight.getPreFlightCheckup());
-        formLayout.setColspan(preFlightCheckupField, 2);
+        preFlightCheckupField.setSizeFull();
         preFlightCheckupField.setRequired(true);
         timeOfDeparturePicker.addValueChangeListener(e -> {
             timeOfArrivalPicker.setEnabled(timeOfDeparturePicker.getValue() != null);
@@ -779,7 +841,7 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
 
         //add fields to form
         formLayout.addFormRow(gliderField);
-        formLayout.setColspan(gliderField, 2);
+        gliderField.setSizeFull();
         formLayout.addFormRow(pilot1Field);
         formLayout.addFormRow(pilot2Field);
         formLayout.addFormRow(dateField);
@@ -817,6 +879,8 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         //adds buttons, shows form
         editForm.getFooter().add(cancelButton, editButton);
         editForm.add(formLayout);
+        Scroller scroller = new Scroller(formLayout);
+        editForm.add(scroller);
         editForm.open();
     }
 
@@ -824,8 +888,12 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         //creates UI elements to input filter requirements
         Dialog filterForm = new Dialog();
         FormLayout formLayout = new FormLayout();
-        formLayout.setAutoResponsive(true);
-        formLayout.setExpandFields(true);
+        formLayout.setSizeFull();
+        formLayout.setMaxWidth("400px");
+        formLayout.setResponsiveSteps(
+            new FormLayout.ResponsiveStep("0", 1),
+            new FormLayout.ResponsiveStep("500px", 2)
+        );
         ComboBox<Glider> gliderField = new ComboBox<>();
         gliderField.setLabel("Glider");
         gliderField.setItems(gliderService.getAllGliders());
@@ -833,7 +901,7 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         if(gliderFilter != null) {
             gliderField.setValue(gliderFilter);
         }
-        formLayout.setColspan(gliderField, 2);
+        gliderField.setSizeFull();
         ComboBox<Pilot> pilot1Field = new ComboBox<>();
         pilot1Field.setLabel("Pilot 1");
         pilot1Field.setItems(pilotService.getAllPilots());
@@ -841,11 +909,11 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
             pilot1Field.setValue(pilot1Filter);
         }
         pilot1Field.setItemLabelGenerator(Pilot::getName);
-        formLayout.setColspan(pilot1Field, 2);
+        pilot1Field.setSizeFull();
         ComboBox<Pilot> pilot2Field = new ComboBox<>();
         pilot2Field.setLabel("Pilot 2");
         pilot2Field.setItems(pilotService.getAllPilots());
-        formLayout.setColspan(pilot2Field, 2);
+        pilot2Field.setSizeFull();
         if(pilot2Filter != null) {
             pilot2Field.setValue(pilot2Filter);
         }
@@ -857,6 +925,7 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
             eitherPilotField.setValue(anyPilotFilter);
         }
         eitherPilotField.setItemLabelGenerator(Pilot::getName);
+        eitherPilotField.setSizeFull();
         TimePicker timeOfDeparturePicker = new TimePicker();
         timeOfDeparturePicker.setLabel("Time of departure (UTC)");
         if(timeOfDepartureFilter != null) {
@@ -867,17 +936,17 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         if(timeOfArrivalFilter != null) {
             timeOfArrivalPicker.setValue(timeOfArrivalFilter.toLocalTime());
         }
-        formLayout.setColspan(timeOfDeparturePicker, 2);
-        formLayout.setColspan(timeOfArrivalPicker, 2);
+        timeOfDeparturePicker.setSizeFull();
+        timeOfArrivalPicker.setSizeFull();
         TextField pointOfDepartureField = new TextField();
         pointOfDepartureField.setLabel("Point of departure");
         if(pointOfDepartureFilter != null) {
             pointOfDepartureField.setValue(pointOfDepartureFilter);
         }
-        formLayout.setColspan(pointOfDepartureField, 2);
+        pointOfDepartureField.setSizeFull();
         TextField pointOfArrivalField = new TextField();
         pointOfArrivalField.setLabel("Point of arrival");
-        formLayout.setColspan(pointOfArrivalField, 2);
+        pointOfArrivalField.setSizeFull();
         if (pointOfArrivalFilter != null) {
             pointOfArrivalField.setValue(pointOfArrivalFilter);
         }
@@ -885,7 +954,7 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         timeOfArrivalPicker.addValueChangeListener(e -> timeOfDeparturePicker.setMax(e.getValue()));
         DatePicker dateField = new DatePicker();
         dateField.setLabel("Date");
-        formLayout.setColspan(dateField, 2);
+        dateField.setSizeFull();
         if (dateFilter != null) {
             dateField.setValue(dateFilter.toLocalDate());
         }
@@ -894,7 +963,7 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         if(taskFilter != null) {
             taskField.setValue(taskFilter);
         }
-        formLayout.setColspan(taskField, 2);
+        taskField.setSizeFull();
         TextField preFlightCheckupField = new TextField();
         preFlightCheckupField.setLabel("Pre Flight Checkup");
         if(preFlightCheckupFilter != null) {
@@ -909,7 +978,7 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
         flightDurationMinsField.setMin(0);
         flightDurationMinsField.setMax(59);
         flightDurationMinsField.setRequired(true);
-        formLayout.setColspan(preFlightCheckupField, 2);
+        preFlightCheckupField.setSizeFull();
         formLayout.addFormRow(gliderField);
         formLayout.addFormRow(pilot1Field);
         formLayout.addFormRow(pilot2Field);
@@ -971,6 +1040,8 @@ public class FlightsView extends VerticalLayout implements BeforeEnterObserver {
 
         //adds all UI elements, shows form
         filterForm.add(formLayout);
+        Scroller scroller = new Scroller(formLayout);
+        filterForm.add(scroller);
         filterForm.getFooter().add(cancelButton, confirmButton);
         filterForm.open();
     }

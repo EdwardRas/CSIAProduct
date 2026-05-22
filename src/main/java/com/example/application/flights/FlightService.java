@@ -369,6 +369,7 @@ public class FlightService {
         }*/
     }
     //returns all archival flights of specified glider on specified date, used in validation
+    //There is an index created in the schema so that often usage of this function is not heavily taxing
     public List<Flight> getArchivalFlightsByGliderAndDate(Glider glider, Date date) throws SQLException {
         List<Flight> flights = new ArrayList<>();
         String sql = "SELECT * FROM flights WHERE (glider_id = ? AND date = ? AND status = 'archival')";
@@ -412,6 +413,7 @@ public class FlightService {
         return flights;
     }
     //returns all archival flights of specified pilot on specified date, used in validation
+    //There is an index created in the schema so that often usage of this function is not heavily taxing
     public List<Flight> getArchivalFlightsByPilotAndDate(Pilot pilot, Date date) throws SQLException {
         List<Flight> flights = new ArrayList<>();
         String sql = "SELECT * FROM flights WHERE ((pilot_1_id = ? OR pilot_2_id = ?) AND date = ? and status = 'archival')";

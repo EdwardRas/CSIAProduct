@@ -1,6 +1,8 @@
 package com.example.application.base.ui;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
+import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.login.LoginForm;
@@ -23,6 +25,9 @@ public class LoginView extends VerticalLayout {
     private static final Map<String, String> ALLOWED_USERS = Map.of("user", "e450e8afb4a460cbffdeab3b0691e5c7");
 
     public LoginView() {
+        setAlignItems(Alignment.CENTER);
+        setJustifyContentMode(JustifyContentMode.CENTER);
+        setSizeFull();
         LoginForm loginForm = new LoginForm();
         loginForm.addLoginListener(e -> {
             String hash = hashMD5(e.getPassword());
@@ -33,6 +38,13 @@ public class LoginView extends VerticalLayout {
             else {
                 loginForm.setError(true);
             }
+        });
+        loginForm.addForgotPasswordListener(e -> {
+            ConfirmDialog dialog = new ConfirmDialog();
+            dialog.setHeader("Forgot Password?");
+            dialog.setText("The password can be found in the documentation (Criterion D). If you do not have access to the documentation, you shouldn't have access to this application.");
+            dialog.setConfirmText("OK");
+            dialog.open();
         });
         add(loginForm);
     }

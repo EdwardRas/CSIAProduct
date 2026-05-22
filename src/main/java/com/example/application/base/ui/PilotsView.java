@@ -23,6 +23,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.BeforeEnterEvent;
 import com.vaadin.flow.router.BeforeEnterObserver;
+import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.VaadinSession;
 import org.jspecify.annotations.NonNull;
@@ -31,15 +32,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.sql.SQLException;
 import java.util.List;
 
-@Route("pilots")
-public class PilotsView extends VerticalLayout implements BeforeEnterObserver {
+@Route(value = "pilots", layout =  MainLayout.class)
+@Menu(order = 2, icon = "vaadin:user-card")
+public class PilotsView extends VerticalLayout{
 
-    @Override
-    public void beforeEnter(BeforeEnterEvent e) {
-        if(!"user".equals(VaadinSession.getCurrent().getAttribute("username"))) {
-            e.rerouteTo(LoginView.class);
-        }
-    }
 
     //DB service objects
     private final PilotService pilotService;
@@ -75,7 +71,11 @@ public class PilotsView extends VerticalLayout implements BeforeEnterObserver {
         //create search text field
         TextField searchField = new TextField();
         searchField.setWidth("250px");
-        searchField.setLabel("Search");
+        searchField.setPlaceholder("Search");
+        searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
+        searchField.setValueChangeMode(ValueChangeMode.EAGER);
+        searchField.addValueChangeListener(e -> dataView.refreshAll());
+
 
         //create button to open addition form
         Button addButton = new Button("Add Pilot", e -> {
@@ -110,8 +110,8 @@ public class PilotsView extends VerticalLayout implements BeforeEnterObserver {
                     deleteDialog.setConfirmButtonTheme("error primary");
                     deleteDialog.addConfirmListener(event -> {
                         try {
-                            pilotService.deletePilot(deletingId);
                             flightService.modifyFlightByPilotId(deletingId);
+                            pilotService.deletePilot(deletingId);
                             UI.getCurrent().getPage().reload();;
                         }
                         catch (SQLException ex) {
@@ -153,9 +153,6 @@ public class PilotsView extends VerticalLayout implements BeforeEnterObserver {
         editButton.setEnabled(false);
 
         //search functionality
-        searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
-        searchField.setValueChangeMode(ValueChangeMode.EAGER);
-        searchField.addValueChangeListener(e -> dataView.refreshAll());
         dataView.addFilter(item -> {
             String searchTerm = searchField.getValue().trim();
 
@@ -169,11 +166,13 @@ public class PilotsView extends VerticalLayout implements BeforeEnterObserver {
             return matchesID || matchesName || matchesLicenseNumber ;
         });
 
+        addButton.setPrefixComponent(new Icon(VaadinIcon.FILE_ADD));
+        deleteButton.setPrefixComponent(new Icon(VaadinIcon.TRASH));
+        editButton.setPrefixComponent(new Icon(VaadinIcon.EDIT));
+
         //add all UI elements
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setSizeFull();
-        buttonsLayout.add(new Button("Flights", e -> FlightsView.showView()));
-        buttonsLayout.add(new Button("Gliders", e -> GlidersView.showView()));
         buttonsLayout.add(searchField, addButton, deleteButton, editButton);
         add(buttonsLayout, grid);
     }
@@ -183,15 +182,19 @@ public class PilotsView extends VerticalLayout implements BeforeEnterObserver {
         //create UI elements for data input
         Dialog additionForm = new Dialog();
         FormLayout formLayout = new FormLayout();
-        formLayout.setAutoResponsive(true);
-        formLayout.setExpandFields(true);
+        formLayout.setSizeFull();
+        formLayout.setMaxWidth("400px");
+        formLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("0", 1),
+                new FormLayout.ResponsiveStep("500px", 2)
+        );
         TextField nameField = new TextField();
         nameField.setLabel("Name");
         nameField.setRequired(true);
-        formLayout.setColspan(nameField, 2);
+        nameField.setSizeFull();
         TextField licenseNumberField = new TextField();
         licenseNumberField.setLabel("License Number");
-        formLayout.setColspan(licenseNumberField, 2);
+        licenseNumberField.setSizeFull();
         formLayout.addFormRow(nameField);
         formLayout.addFormRow(licenseNumberField);
 
@@ -221,22 +224,26 @@ public class PilotsView extends VerticalLayout implements BeforeEnterObserver {
         //create UI elements for data input
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
-        formLayout.setAutoResponsive(true);
-        formLayout.setExpandFields(true);
+        formLayout.setSizeFull();
+formLayout.setMaxWidth("400px");
+formLayout.setResponsiveSteps(
+        new FormLayout.ResponsiveStep("0", 1),
+        new FormLayout.ResponsiveStep("500px", 2)
+);
         TextField nameField = new TextField();
         nameField.setLabel("Name");
         nameField.setRequired(true);
         nameField.setValue(pilot.getName());
-        formLayout.setColspan(nameField, 2);
+        nameField.setSizeFull();
         TextField licenseNumberField = new TextField();
         licenseNumberField.setLabel("License Number");
-        formLayout.setColspan(licenseNumberField, 2);
+        licenseNumberField.setSizeFull();
         licenseNumberField.setValue(pilot.getLicenseNumber());
         formLayout.addFormRow(nameField);
         formLayout.addFormRow(licenseNumberField);
 
         //create buttons to confirm addition
-        Button addButton = new Button("Add", e -> {
+        Button addButton = new Button("Edit", e -> {
             if(nameField.isEmpty()){
                 Notification.show("At least one field value is invalid");
                 return;
