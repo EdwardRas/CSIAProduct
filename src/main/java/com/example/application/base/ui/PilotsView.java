@@ -33,7 +33,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Route(value = "pilots", layout =  MainLayout.class)
-@Menu(order = 2, icon = "vaadin:user-card")
+@Menu(order = 2, icon = "vaadin:user-card", title = "Pilots")
 public class PilotsView extends VerticalLayout{
 
 
@@ -243,7 +243,7 @@ formLayout.setResponsiveSteps(
         formLayout.addFormRow(licenseNumberField);
 
         //create buttons to confirm addition
-        Button addButton = new Button("Edit", e -> {
+        Button addButton = new Button("Confirm", e -> {
             if(nameField.isEmpty()){
                 Notification.show("At least one field value is invalid");
                 return;

@@ -30,7 +30,7 @@ import java.sql.*;
 import java.util.List;
 
 @Route(value = "gliders", layout =  MainLayout.class)
-@Menu(order = 1, icon = "vaadin:airplane")public class GlidersView extends VerticalLayout{
+@Menu(order = 1, icon = "vaadin:airplane", title = "Gliders")public class GlidersView extends VerticalLayout{
     //DB service objects
     private final GliderService gliderService;
     private final FlightService flightService;
@@ -407,7 +407,7 @@ import java.util.List;
         formLayout.addFormRow(nextCheckupDateField);
 
         //create buttons to confirm and cancel record editing
-        Button editButton = new Button("Edit", e -> {
+        Button editButton = new Button("Confirm", e -> {
             //if any field has an invalid value, end lambda function early
             if(regNumField.isEmpty() || flightCountField.isEmpty() || totalFlightTimeHrsField.isInvalid() || totalFlightTimeMinsField.isInvalid() || typeField.isEmpty() || nextCheckupHrsHrsField.isInvalid() || nextCheckupFlightsField.isInvalid() || nextCheckupHrsMinsField.isInvalid() || nextCheckupDateField.isInvalid()) {
                 Notification.show("At least one field value is invalid");

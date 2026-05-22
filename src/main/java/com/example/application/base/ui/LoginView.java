@@ -22,7 +22,9 @@ import java.util.Map;
 public class LoginView extends VerticalLayout {
     //password: xnB2Muk3CjO
     //Hash method: MD5
-    private static final Map<String, String> ALLOWED_USERS = Map.of("user", "e450e8afb4a460cbffdeab3b0691e5c7");
+    //robert password (not for final deployment): Hockey123!
+    //Hash method: MD5
+    private static final Map<String, String> ALLOWED_USERS = Map.of("user", "e450e8afb4a460cbffdeab3b0691e5c7", "robert", "3147937cc5877cffe5c7b1ba7240248e");
 
     public LoginView() {
         setAlignItems(Alignment.CENTER);

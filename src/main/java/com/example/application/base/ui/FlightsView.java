@@ -8,6 +8,7 @@ import com.example.application.pilots.PilotService;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -62,8 +63,8 @@ import java.util.List;
 import static com.vaadin.flow.component.notification.Notification.show;
 
 @Route(value = "flights", layout =  MainLayout.class)
-@Menu(order = 0, icon = "vaadin:flight-takeoff")
-public class FlightsView extends VerticalLayout  {
+@Menu(order = 0, icon = "vaadin:flight-takeoff", title = "Flights")
+public class FlightsView extends VerticalLayout {
     //DB service objects
     private final FlightService flightService;
     private final PilotService pilotService;
@@ -244,8 +245,10 @@ public class FlightsView extends VerticalLayout  {
 
         landButton.setPrefixComponent(new Icon(VaadinIcon.FLIGHT_LANDING));
 
-        Button filterButton = new Button("Filter", e -> showFilterForm(dataView));
+        Button filterButton = new Button("Filter");
+        filterButton.addClickListener(e -> showFilterForm(dataView));
         filterButton.setPrefixComponent(new Icon(VaadinIcon.FILTER));
+
 
         //add listener entity to check when the selection on the grid changes
         grid.addSelectionListener(e -> {
@@ -399,6 +402,8 @@ public class FlightsView extends VerticalLayout  {
                     matchesID || matchesDate || matchesPointOfDeparture || matchesPilot2 || matchesGlider ||
                     matchesPilot1 || matchesPointOfArrival || matchesTimeOfDeparture) && matchesFilter;
         });
+
+
 
         //create button to export records
         Button exportButton = new Button("Export", e -> {showExportDialog(gliderService, flightService);});
@@ -853,7 +858,7 @@ public class FlightsView extends VerticalLayout  {
         formLayout.addFormRow(preFlightCheckupField);
 
         //creates button to confirm edit execution
-        Button editButton = new Button("Edit", e -> {
+        Button editButton = new Button("Confirm", e -> {
             //if any field has an invalid value, end lambda function early
             if(gliderField.isEmpty() || pilot1Field.isEmpty() || (!pilot2Field.isEmpty() && pilot2Field.getValue().equals(pilot1Field.getValue())) || timeOfArrivalPicker.isInvalid() || timeOfDeparturePicker.isInvalid() || pointOfDepartureField.isEmpty() || pointOfArrivalField.isEmpty() || dateField.isEmpty() || taskField.isEmpty() || preFlightCheckupField.isEmpty()) {
                 Notification.show("At least one field value is invalid");
@@ -978,6 +983,8 @@ public class FlightsView extends VerticalLayout  {
         flightDurationMinsField.setMin(0);
         flightDurationMinsField.setMax(59);
         flightDurationMinsField.setRequired(true);
+        formLayout.setColspan(flightDurationHrsField, 1);
+        formLayout.setColspan(flightDurationMinsField, 1);
         preFlightCheckupField.setSizeFull();
         formLayout.addFormRow(gliderField);
         formLayout.addFormRow(pilot1Field);
@@ -989,8 +996,13 @@ public class FlightsView extends VerticalLayout  {
         formLayout.addFormRow(pointOfArrivalField);
         formLayout.addFormRow(timeOfDeparturePicker);
         formLayout.addFormRow(timeOfArrivalPicker);
-        formLayout.addFormRow(new Span("Flight Duration"));
-        formLayout.addFormRow(flightDurationHrsField, flightDurationMinsField);
+        Span flightDurationTitle = new Span("Flight Duration");
+        formLayout.addFormRow(flightDurationTitle);
+        HorizontalLayout flightDurationLayout = new HorizontalLayout();
+        flightDurationLayout.setSpacing(true);
+        flightDurationLayout.setSizeFull();
+        flightDurationLayout.add(flightDurationHrsField, flightDurationMinsField);
+        formLayout.addFormRow(flightDurationLayout);
         formLayout.addFormRow(preFlightCheckupField);
 
         //creates buttons to confirm and cancel filtering
