@@ -693,6 +693,17 @@ public class FlightsView extends VerticalLayout {
                                 throw new RuntimeException(ex);
                             }
                         }
+                        else if(isActive){
+                            pilot1.isFlying = true;
+                            pilotService.editPilot(pilot1);
+                            if(pilot2 != null){
+                                pilot2.isFlying = true;
+                                pilotService.editPilot(pilot2);
+                            }
+                            glider.setFlightCount(glider.getFlightCount() + 1);
+                            glider.isFlying = false;
+                            gliderService.editGlider(glider);
+                        }
                         additionForm.close();
                         UI.getCurrent().getPage().reload();
                     }
@@ -715,6 +726,9 @@ public class FlightsView extends VerticalLayout {
                                     pilot2.isFlying = true;
                                     pilotService.editPilot(pilot2);
                                 }
+                                glider.setFlightCount(glider.getFlightCount() + 1);
+                                glider.isFlying = false;
+                                gliderService.editGlider(glider);
                             }
                             additionForm.close();
                             UI.getCurrent().getPage().reload();

@@ -16,6 +16,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.orderedlayout.Scroller;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
@@ -196,6 +197,7 @@ import java.util.List;
     }
 
     //shows user form to input addition data
+    //TODO doesn't show checkup date field
     private void showAdditionForm(GliderService gliderService) throws SQLException {
         //create all UI elements for data input
         Dialog additionForm = new Dialog();
@@ -273,6 +275,8 @@ import java.util.List;
         formLayout.addFormRow(nextChecukpHrsLayout);
         formLayout.addFormRow(nextCheckupFlightsField);
         formLayout.addFormRow(nextCheckupDateField);
+        Scroller scroller = new Scroller(formLayout);
+        additionForm.add(scroller);
 
         //create buttons to confirm and cancel addition
         Button addButton = new Button("Add", e -> {
@@ -325,6 +329,7 @@ import java.util.List;
     }
 
     //shows user form for record editing
+    //TODO doesn't show checkup date field
     private void showEditForm(GliderService gliderService, Glider glider) throws SQLException {
         //create all UI elements for data input
         Dialog editForm = new Dialog();
@@ -405,6 +410,8 @@ import java.util.List;
         formLayout.addFormRow(nextChecukpHrsLayout);
         formLayout.addFormRow(nextCheckupFlightsField);
         formLayout.addFormRow(nextCheckupDateField);
+        Scroller scroller = new Scroller(formLayout);
+        editForm.add(scroller);
 
         //create buttons to confirm and cancel record editing
         Button editButton = new Button("Confirm", e -> {
