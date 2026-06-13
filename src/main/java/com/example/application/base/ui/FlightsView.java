@@ -610,7 +610,7 @@ public class FlightsView extends VerticalLayout {
         //create button to execute addition
         Button addButton = new Button("Add", e -> {
             //if any field has an invalid value, end lambda function early
-            if(gliderField.isEmpty() || pilot1Field.isEmpty() || (!pilot2Field.isEmpty() && pilot2Field.getValue().equals(pilot1Field.getValue())) || timeOfArrivalPicker.isInvalid() || timeOfDeparturePicker.isInvalid() || pointOfDepartureField.isEmpty() || pointOfArrivalField.isEmpty() || dateField.isEmpty() || taskField.isEmpty() || preFlightCheckupField.isEmpty()) {
+            if(gliderField.isEmpty() || pilot1Field.isEmpty() || (!pilot2Field.isEmpty() && pilot2Field.getValue().equals(pilot1Field.getValue())) || timeOfArrivalPicker.isInvalid() || timeOfDeparturePicker.isInvalid() || pointOfDepartureField.isEmpty() || pointOfArrivalField.isEmpty() || dateField.isEmpty() || dateField.isInvalid() || taskField.isEmpty() || preFlightCheckupField.isEmpty()) {
                 Notification.show("At least one field value is invalid");
                 return;
             }
@@ -874,7 +874,7 @@ public class FlightsView extends VerticalLayout {
         //creates button to confirm edit execution
         Button editButton = new Button("Confirm", e -> {
             //if any field has an invalid value, end lambda function early
-            if(gliderField.isEmpty() || pilot1Field.isEmpty() || (!pilot2Field.isEmpty() && pilot2Field.getValue().equals(pilot1Field.getValue())) || timeOfArrivalPicker.isInvalid() || timeOfDeparturePicker.isInvalid() || pointOfDepartureField.isEmpty() || pointOfArrivalField.isEmpty() || dateField.isEmpty() || taskField.isEmpty() || preFlightCheckupField.isEmpty()) {
+            if(gliderField.isEmpty() || pilot1Field.isEmpty() || (!pilot2Field.isEmpty() && pilot2Field.getValue().equals(pilot1Field.getValue())) || timeOfArrivalPicker.isInvalid() || timeOfDeparturePicker.isInvalid() || pointOfDepartureField.isEmpty() || pointOfArrivalField.isEmpty() || dateField.isEmpty() || dateField.isInvalid() || taskField.isEmpty() || preFlightCheckupField.isEmpty()) {
                 Notification.show("At least one field value is invalid");
                 return;
             }
