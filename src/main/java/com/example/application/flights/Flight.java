@@ -276,11 +276,17 @@ public class Flight {
                         if (filteredByGlider.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfArrival) && !filteredByGlider.get(i).equals(oldFlight)) {
                             return false;
                         }
+                        if(filteredByGlider.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfArrival)){
+                            return false;
+                        }
                     }
                 }
                 if (!filteredByPilot1.isEmpty()) {
                     for (int i = 0; i < filteredByPilot1.size(); i++) {
                         if (filteredByPilot1.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot1.get(i).getTimeOfArrival().after(timeOfArrival) && !filteredByPilot1.get(i).equals(oldFlight)) {
+                            return false;
+                        }
+                        if(filteredByPilot1.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByPilot1.get(i).getTimeOfArrival().after(timeOfArrival)){
                             return false;
                         }
                     }
@@ -289,6 +295,9 @@ public class Flight {
                     if (!filteredByPilot2.isEmpty()) {
                         for (int i = 0; i < filteredByPilot2.size(); i++) {
                             if (filteredByPilot2.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot2.get(i).getTimeOfArrival().after(timeOfArrival) && !filteredByPilot2.get(i).equals(oldFlight)) {
+                                return false;
+                            }
+                            if(filteredByPilot2.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByPilot2.get(i).getTimeOfArrival().after(timeOfArrival)){
                                 return false;
                             }
                         }
@@ -351,7 +360,6 @@ public class Flight {
                     output = "This glider is overdue for a checkup in terms of date";
                 }
             }
-            //TODO add else if clause o check if its close
         }
         if (glider.getNextCheckupFlights() != null) {
             if (glider.getNextCheckupFlights() < glider.getFlightCount() + 1) {

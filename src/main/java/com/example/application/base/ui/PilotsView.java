@@ -225,11 +225,11 @@ public class PilotsView extends VerticalLayout{
         Dialog editForm = new Dialog();
         FormLayout formLayout = new FormLayout();
         formLayout.setSizeFull();
-formLayout.setMaxWidth("400px");
-formLayout.setResponsiveSteps(
-        new FormLayout.ResponsiveStep("0", 1),
-        new FormLayout.ResponsiveStep("500px", 2)
-);
+        formLayout.setMaxWidth("400px");
+        formLayout.setResponsiveSteps(
+            new FormLayout.ResponsiveStep("0", 1),
+            new FormLayout.ResponsiveStep("500px", 2)
+        );
         TextField nameField = new TextField();
         nameField.setLabel("Name");
         nameField.setRequired(true);
@@ -260,7 +260,6 @@ formLayout.setResponsiveSteps(
         editForm.getFooter().add(cancelButton, addButton);
         editForm.add(formLayout);
         editForm.open();
-        
     }
     //navigate the UI to this view
     public static void showView() {

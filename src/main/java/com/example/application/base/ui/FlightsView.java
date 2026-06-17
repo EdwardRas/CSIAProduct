@@ -413,7 +413,6 @@ public class FlightsView extends VerticalLayout {
         buttonsLayout.setSizeFull();
         buttonsLayout.add(addButton, deleteButton, editButton, searchField, filterButton, launchButton, landButton, exportButton);
         add(buttonsLayout, tabs, grid);
-
     }
     //shows user form to export records
     private void showExportDialog(GliderService gliderService, FlightService flightService) {
@@ -874,7 +873,9 @@ public class FlightsView extends VerticalLayout {
         //creates button to confirm edit execution
         Button editButton = new Button("Confirm", e -> {
             //if any field has an invalid value, end lambda function early
-            if(gliderField.isEmpty() || pilot1Field.isEmpty() || (!pilot2Field.isEmpty() && pilot2Field.getValue().equals(pilot1Field.getValue())) || timeOfArrivalPicker.isInvalid() || timeOfDeparturePicker.isInvalid() || pointOfDepartureField.isEmpty() || pointOfArrivalField.isEmpty() || dateField.isEmpty() || dateField.isInvalid() || taskField.isEmpty() || preFlightCheckupField.isEmpty()) {
+            if(gliderField.isEmpty() || pilot1Field.isEmpty() || (!pilot2Field.isEmpty() && pilot2Field.getValue().equals(pilot1Field.getValue()))
+                    || timeOfArrivalPicker.isInvalid() || timeOfDeparturePicker.isInvalid() || pointOfDepartureField.isEmpty() || pointOfArrivalField.isEmpty()
+                    || dateField.isEmpty() || dateField.isInvalid() || taskField.isEmpty() || preFlightCheckupField.isEmpty()) {
                 Notification.show("At least one field value is invalid");
                 return;
             }
@@ -1099,6 +1100,8 @@ public class FlightsView extends VerticalLayout {
                 isActive = false;
                 isArchival = true;
             }
+            editedFlight.isActive = isActive;
+            editedFlight.isArchival = isArchival;
 
             //calculate flight duration
             String hours;
@@ -1128,7 +1131,7 @@ public class FlightsView extends VerticalLayout {
             if (pilot2 != null) {
                 filteredByPilot2 = flightService.getArchivalFlightsByPilotAndDate(pilot2, date);
             }
-            if (flight.validateEdit(flight, filteredByGlider, filteredByPilot1, filteredByPilot2)) {
+            if (editedFlight.validateEdit(flight, filteredByGlider, filteredByPilot1, filteredByPilot2)) {
                 //checks if this flight doesn't violate any deadlines
                 String checkupChecker = flight.checkNextCheckup();
                 if (checkupChecker == null) {
@@ -1352,7 +1355,8 @@ public class FlightsView extends VerticalLayout {
 
             //builds HTML of the document
             SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yyyy");
-            String header = String.format(headerRow, first.getGlider().getType(),  first.getGlider().getRegistrationNumber(), sdf.format(first.getDate()), first.getGlider().getTotalFlightTime(), first.getGlider().getFlightCount());
+            String header = String.format(headerRow, first.getGlider().getType(),  first.getGlider().getRegistrationNumber(), sdf.format(first.getDate()),
+                    first.getGlider().getTotalFlightTime(), first.getGlider().getFlightCount());
             StringBuilder pdfHTML = new StringBuilder();
             pdfHTML.append(templateBegin);
             pdfHTML.append(header);
