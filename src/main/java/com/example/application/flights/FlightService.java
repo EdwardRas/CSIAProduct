@@ -105,7 +105,7 @@ public class FlightService {
                 String minutes;
                 if(flight.getTimeOfArrival().getHours() - flight.getTimeOfDeparture().getHours() > 0 && flight.getTimeOfArrival().getMinutes() < flight.getTimeOfDeparture().getMinutes()){
                     hours = String.valueOf(flight.getTimeOfArrival().getHours() - flight.getTimeOfDeparture().getHours() - 1);
-                    minutes = String.valueOf(60 -  flight.getTimeOfArrival().getMinutes() + flight.getTimeOfDeparture().getMinutes());
+                    minutes = String.valueOf(60 + flight.getTimeOfArrival().getMinutes() - flight.getTimeOfDeparture().getMinutes());
                 }
                 else {
                     hours = String.valueOf(flight.getTimeOfArrival().getHours() -  flight.getTimeOfDeparture().getHours());
@@ -158,7 +158,7 @@ public class FlightService {
             String minutes;
             if(timeOfArrival.getHours() - timeOfDeparture.getHours() > 0 && timeOfArrival.getMinutes() < timeOfDeparture.getMinutes()){
                 hours = String.valueOf(timeOfArrival.getHours() - timeOfDeparture.getHours() - 1);
-                minutes = String.valueOf(60 -  timeOfArrival.getMinutes() + timeOfDeparture.getMinutes());
+                minutes = String.valueOf(60 +  timeOfArrival.getMinutes() - timeOfDeparture.getMinutes());
             }
             else {
                 hours = String.valueOf(timeOfArrival.getHours() -  timeOfDeparture.getHours());
@@ -372,14 +372,14 @@ public class FlightService {
     //There is an index created in the schema so that often usage of this function is not heavily taxing
     public List<Flight> getArchivalFlightsByGliderAndDate(Glider glider, Date date) throws SQLException {
         List<Flight> flights = new ArrayList<>();
-        String sql = "SELECT * FROM flights WHERE (glider_id = ? AND date = ? AND status = 'archival')";
+        String sql = "SELECT * FROM flights WHERE (glider_id = ? AND date = ? AND status = 'archival') ORDER BY time_of_departure ASC";
         try (Connection conn = dataSource.getConnection()) {
-            Flight flight = new Flight();
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setLong(1, glider.getId());
             ps.setDate(2, date);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
+                Flight flight = new Flight();
                 flight.setId(rs.getLong("id"));
                 flight.setPilot1(pilotService.findPilot(rs.getLong("pilot_1_id")));
                 flight.setPilot2(pilotService.findPilot(rs.getLong("pilot_2_id")));
@@ -418,13 +418,13 @@ public class FlightService {
         List<Flight> flights = new ArrayList<>();
         String sql = "SELECT * FROM flights WHERE ((pilot_1_id = ? OR pilot_2_id = ?) AND date = ? and status = 'archival')";
         try (Connection conn = dataSource.getConnection()) {
-            Flight flight = new Flight();
             PreparedStatement ps = conn.prepareStatement(sql);
             ps.setLong(1, pilot.getId());
             ps.setLong(2, pilot.getId());
             ps.setDate(3, date);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
+                Flight flight = new Flight();
                 flight.setId(rs.getLong("id"));
                 flight.setPilot1(pilotService.findPilot(rs.getLong("pilot_1_id")));
                 flight.setPilot2(pilotService.findPilot(rs.getLong("pilot_2_id")));

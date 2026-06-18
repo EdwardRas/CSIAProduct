@@ -8,7 +8,6 @@ import com.example.application.pilots.PilotService;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.datepicker.DatePicker;
@@ -32,31 +31,20 @@ import com.vaadin.flow.component.textfield.IntegerField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.data.value.ValueChangeMode;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
 import com.vaadin.flow.router.Menu;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.server.VaadinSession;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.DownloadResponse;
-import org.jsoup.Jsoup;
-import org.jsoup.helper.W3CDom;
-import org.jsoup.nodes.Document;
-import org.jspecify.annotations.NonNull;
 import org.postgresql.util.PGInterval;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.swing.text.DateFormatter;
 import java.io.*;
-import java.nio.file.Files;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -86,8 +74,8 @@ public class FlightsView extends VerticalLayout {
     private String preFlightCheckupFilter;
     //gliderFilter is protected static so that it can be easily modified from GlidersView
     protected static Glider gliderFilter;
-    private UI currentUI;
-
+    Grid<Flight> grid;
+    TextField searchField;
 
     @Autowired //automatically handles input variables
     public FlightsView(FlightService flightService, GliderService gliderService, PilotService pilotService)  {
@@ -99,7 +87,7 @@ public class FlightsView extends VerticalLayout {
         //create list of all flights in DB
         List<Flight> records = this.flightService.getAllFlights();
         //Create gird display element
-        Grid<Flight> grid = new Grid<>();
+        grid = new Grid<Flight>();
         //Hides sorting buttons while not hovering over them
         com.vaadin.flow.dom.Element styleElement = new com.vaadin.flow.dom.Element("style");
         styleElement.setText("vaadin-grid-sorter:not([direction]):not(:hover)::part(indicators) {\n" +
@@ -160,7 +148,7 @@ public class FlightsView extends VerticalLayout {
                 .setSortable(true);
         //set the rows of the grid to all the flights in DB
         GridListDataView<Flight> dataView = grid.setItems(records);
-
+        
         //create button to add flight
         Button addButton = new Button("Add Flight", e -> {
             try {
@@ -218,7 +206,7 @@ public class FlightsView extends VerticalLayout {
                 String task = selectionModel.getSelectedItem().get().getTask();
                 String preFlightCheckup = selectionModel.getSelectedItem().get().getPreFlightCheckup();
                 editFlightLogic(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, timeOfDeparture,  timeOfArrival, task, preFlightCheckup);
-                UI.getCurrent().getPage().reload();
+                refreshRecords();
             }
         });
 
@@ -239,7 +227,7 @@ public class FlightsView extends VerticalLayout {
                 String task = selectionModel.getSelectedItem().get().getTask();
                 String preFlightCheckup = selectionModel.getSelectedItem().get().getPreFlightCheckup();
                 editFlightLogic(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, timeOfDeparture,  timeOfArrival, task, preFlightCheckup);
-                UI.getCurrent().getPage().reload();
+                refreshRecords();
             }
         });
 
@@ -304,7 +292,7 @@ public class FlightsView extends VerticalLayout {
         });
 
         //create search text field
-        TextField searchField = new TextField();
+        searchField = new TextField();
         searchField.setWidth("250px");
         searchField.setPlaceholder("Search");
         searchField.setPrefixComponent(new Icon(VaadinIcon.SEARCH));
@@ -312,6 +300,20 @@ public class FlightsView extends VerticalLayout {
         searchField.addValueChangeListener(e -> dataView.refreshAll());
 
         //Data filtering
+        setFilter(dataView);
+
+
+        //create button to export records
+        Button exportButton = new Button("Export", e -> {showExportDialog(gliderService, flightService);});
+        exportButton.setPrefixComponent(new Icon(VaadinIcon.DOWNLOAD_ALT));
+        //add all UI elements
+        HorizontalLayout buttonsLayout = new HorizontalLayout();
+        buttonsLayout.setSizeFull();
+        buttonsLayout.add(addButton, deleteButton, editButton, searchField, filterButton, launchButton, landButton, exportButton);
+        add(buttonsLayout, tabs, grid);
+    }
+
+    private void setFilter(GridListDataView<Flight> dataView) {
         dataView.addFilter(item -> {
             String searchTerm = searchField.getValue().trim();
             //Search Field handling
@@ -402,18 +404,8 @@ public class FlightsView extends VerticalLayout {
                     matchesID || matchesDate || matchesPointOfDeparture || matchesPilot2 || matchesGlider ||
                     matchesPilot1 || matchesPointOfArrival || matchesTimeOfDeparture) && matchesFilter;
         });
-
-
-
-        //create button to export records
-        Button exportButton = new Button("Export", e -> {showExportDialog(gliderService, flightService);});
-        exportButton.setPrefixComponent(new Icon(VaadinIcon.DOWNLOAD_ALT));
-        //add all UI elements
-        HorizontalLayout buttonsLayout = new HorizontalLayout();
-        buttonsLayout.setSizeFull();
-        buttonsLayout.add(addButton, deleteButton, editButton, searchField, filterButton, launchButton, landButton, exportButton);
-        add(buttonsLayout, tabs, grid);
     }
+
     //shows user form to export records
     private void showExportDialog(GliderService gliderService, FlightService flightService) {
         //creates form and all its data entry fields
@@ -445,8 +437,7 @@ public class FlightsView extends VerticalLayout {
         Button cancelButton = new Button("Cancel", e -> exportForm.close());
 
         final List<Flight> flights = new ArrayList<>();
-
-        currentUI = UI.getCurrent();
+        
         downloadButton.setEnabled(gliderField.getValue() != null && datePicker.getValue() != null);
         gliderField.addValueChangeListener(e -> {
             downloadButton.setEnabled(gliderField.getValue() != null && datePicker.getValue() != null);
@@ -501,7 +492,7 @@ public class FlightsView extends VerticalLayout {
 
     }
     //shows user dialog to confirm deletion
-    private static ConfirmDialog getDeleteDialog(FlightService flightService, Long deletingId, GliderService gliderService) {
+    private ConfirmDialog getDeleteDialog(FlightService flightService, Long deletingId, GliderService gliderService) {
         //create dialog
         ConfirmDialog deleteDialog = new ConfirmDialog();
         deleteDialog.setHeader("Delete Flight?");
@@ -530,7 +521,7 @@ public class FlightsView extends VerticalLayout {
                 throw new RuntimeException(e);
             }
             flightService.deleteFlight(deletingId);
-            UI.getCurrent().getPage().reload();
+            refreshRecords();
         });
         return deleteDialog;
     }
@@ -639,7 +630,7 @@ public class FlightsView extends VerticalLayout {
                 //calculates flight duration
                 if (timeOfArrival.getHour() - timeOfDeparture.getHour() > 0 && timeOfArrival.getMinute() < timeOfDeparture.getMinute()) {
                     hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour() - 1);
-                    minutes = String.valueOf(60 - timeOfArrival.getMinute() + timeOfDeparture.getMinute());
+                    minutes = String.valueOf(60 + timeOfArrival.getMinute() - timeOfDeparture.getMinute());
                 } else {
                     hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour());
                     minutes = String.valueOf(timeOfArrival.getMinute() - timeOfDeparture.getMinute());
@@ -704,7 +695,7 @@ public class FlightsView extends VerticalLayout {
                             gliderService.editGlider(glider);
                         }
                         additionForm.close();
-                        UI.getCurrent().getPage().reload();
+                        refreshRecords();
                     }
                     else {
                         if (!checkupChecker.contains("overdue")) {
@@ -730,14 +721,14 @@ public class FlightsView extends VerticalLayout {
                                 gliderService.editGlider(glider);
                             }
                             additionForm.close();
-                            UI.getCurrent().getPage().reload();
+                            refreshRecords();
                             Notification notification = show(checkupChecker);
                             notification.addThemeVariants(NotificationVariant.LUMO_WARNING);
 
                         }
                         else {
-                            additionForm.close();
-                            UI.getCurrent().getPage().reload();
+//                            additionForm.close();
+//                            refreshRecords();
                             Notification notification = show(checkupChecker);
                             notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
                         }
@@ -891,7 +882,7 @@ public class FlightsView extends VerticalLayout {
             String preFlightCheckup = preFlightCheckupField.getValue();
             editFlightLogic(flight, glider, pilot1, pilot2, date, pointOfDeparture, pointOfArrival, timeOfDeparture, timeOfArrival, task, preFlightCheckup);
             editForm.close();
-            UI.getCurrent().getPage().reload();
+            refreshRecords();
         });
         //creates button to cancel edit execution
         Button cancelButton = new Button("Cancel", e -> editForm.close());
@@ -1110,7 +1101,7 @@ public class FlightsView extends VerticalLayout {
             if (isArchival) {
                 if (timeOfArrival.getHour() - timeOfDeparture.getHour() > 0 && timeOfArrival.getMinute() < timeOfDeparture.getMinute()) {
                     hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour() - 1);
-                    minutes = String.valueOf(60 - timeOfArrival.getMinute() + timeOfDeparture.getMinute());
+                    minutes = String.valueOf(60 + timeOfArrival.getMinute() - timeOfDeparture.getMinute());
                 } else {
                     hours = String.valueOf(timeOfArrival.getHour() - timeOfDeparture.getHour());
                     minutes = String.valueOf(timeOfArrival.getMinute() - timeOfDeparture.getMinute());
@@ -1218,6 +1209,12 @@ public class FlightsView extends VerticalLayout {
                 pilotService.editPilot(flight.getPilot2());
             }
         }
+    }
+    
+    private void refreshRecords(){
+        List<Flight> records = this.flightService.getAllFlights();
+        GridListDataView dataView = grid.setItems(records);
+        setFilter(dataView);
     }
 
     //creates pdf document containing selected records
@@ -1367,7 +1364,7 @@ public class FlightsView extends VerticalLayout {
                             flight.getPointOfDeparture(), flight.getPointOfArrival(), flight.getTask(), flight.getTimeOfDeparture(),
                             flight.getTimeOfArrival(), flight.getFlightTime(), flight.getPreFlightCheckup());
 
-                pdfHTML.append(row);
+                pdfHTML.append(row); // <=> pdfHTML = pdfHTML + "/n" +
                 i++;
             }
             pdfHTML.append(templateEnd);

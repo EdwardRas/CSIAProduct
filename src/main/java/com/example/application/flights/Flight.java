@@ -210,11 +210,17 @@ public class Flight {
                         if (filteredByGlider.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfArrival)) {
                             return false;
                         }
+                        if(filteredByGlider.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByGlider.get(i).getTimeOfArrival().before(timeOfArrival)){
+                            return false;
+                        }
                     }
                 }
                 if (!filteredByPilot1.isEmpty()) {
                     for (int i = 0; i < filteredByPilot1.size(); i++) {
                         if (filteredByPilot1.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot1.get(i).getTimeOfArrival().after(timeOfArrival)) {
+                            return false;
+                        }
+                        if(filteredByPilot1.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByPilot1.get(i).getTimeOfArrival().before(timeOfArrival)){
                             return false;
                         }
                     }
@@ -223,6 +229,9 @@ public class Flight {
                     if (!filteredByPilot2.isEmpty()) {
                         for (int i = 0; i < filteredByPilot2.size(); i++) {
                             if (filteredByPilot2.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot2.get(i).getTimeOfArrival().after(timeOfArrival)) {
+                                return false;
+                            }
+                            if(filteredByPilot2.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByPilot2.get(i).getTimeOfArrival().before(timeOfArrival)){
                                 return false;
                             }
                         }
@@ -276,7 +285,7 @@ public class Flight {
                         if (filteredByGlider.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfArrival) && !filteredByGlider.get(i).equals(oldFlight)) {
                             return false;
                         }
-                        if(filteredByGlider.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByGlider.get(i).getTimeOfArrival().after(timeOfArrival)){
+                        if(filteredByGlider.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByGlider.get(i).getTimeOfArrival().before(timeOfArrival) && !filteredByGlider.get(i).equals(oldFlight)){
                             return false;
                         }
                     }
@@ -286,7 +295,7 @@ public class Flight {
                         if (filteredByPilot1.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot1.get(i).getTimeOfArrival().after(timeOfArrival) && !filteredByPilot1.get(i).equals(oldFlight)) {
                             return false;
                         }
-                        if(filteredByPilot1.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByPilot1.get(i).getTimeOfArrival().after(timeOfArrival)){
+                        if(filteredByPilot1.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByPilot1.get(i).getTimeOfArrival().before(timeOfArrival) && !filteredByPilot1.get(i).equals(oldFlight)){
                             return false;
                         }
                     }
@@ -297,7 +306,7 @@ public class Flight {
                             if (filteredByPilot2.get(i).getTimeOfDeparture().before(timeOfArrival) && filteredByPilot2.get(i).getTimeOfArrival().after(timeOfArrival) && !filteredByPilot2.get(i).equals(oldFlight)) {
                                 return false;
                             }
-                            if(filteredByPilot2.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByPilot2.get(i).getTimeOfArrival().after(timeOfArrival)){
+                            if(filteredByPilot2.get(i).getTimeOfDeparture().after(timeOfDeparture) && filteredByPilot2.get(i).getTimeOfArrival().before(timeOfArrival) && !filteredByPilot2.get(i).equals(oldFlight)){
                                 return false;
                             }
                         }
@@ -312,15 +321,16 @@ public class Flight {
     public String checkNextCheckup(){
         //it outputs a string which contains info on all deadlines it violates or is close to validation
         String output = null;
-
+        boolean overdueHrs = false;
         //if the glider is already overdue in terms of hours, there is no point in checking if the flight adding flight time would violate this deadline
         if(glider.getNextCheckupHrs() != null){
             if (glider.getNextCheckupHrs().getHours() < glider.getTotalFlightTime().getHours() || (glider.getNextCheckupHrs().getHours() == glider.getTotalFlightTime().getHours()) && glider.getNextCheckupHrs().getMinutes() < glider.getTotalFlightTime().getMinutes()) {
                 output = "This glider is overdue for a checkup in terms of flight hours";
+                overdueHrs = true;
             }
         }
-        else if(isArchival) {
-            if (glider.getNextCheckupHrs() != null) {
+        if(isArchival) {
+            if (glider.getNextCheckupHrs() != null && !overdueHrs) {
                 if (glider.getNextCheckupHrs().getHours() < glider.getTotalFlightTime().getHours() + flightTime.getHours()) {
                     if (output != null) {
                         output = output + "\nThis glider is overdue for a checkup in terms of flight hours";
