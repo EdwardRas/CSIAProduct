@@ -516,6 +516,17 @@ public class FlightsView extends VerticalLayout {
                     glider.setFlightCount(glider.getFlightCount() - 1);
                     gliderService.editGlider(glider);
                 }
+                //TODO for some reason not working
+                else if(flightService.getFlightById(deletingId).isActive){
+                    flightService.getFlightById(deletingId).getGlider().isFlying = false;
+                    gliderService.editGlider(flightService.getFlightById(deletingId).getGlider());
+                    flightService.getFlightById(deletingId).getPilot1().isFlying = false;
+                    pilotService.editPilot(flightService.getFlightById(deletingId).getPilot1());
+                    if(flightService.getFlightById(deletingId).getPilot2() != null){
+                        flightService.getFlightById(deletingId).getPilot1().isFlying = false;
+                        pilotService.editPilot(flightService.getFlightById(deletingId).getPilot2());
+                    }
+                }
             } catch (SQLException e) {
                 Notification notification = show("Error: " + e.getErrorCode());
                 throw new RuntimeException(e);
@@ -1194,16 +1205,20 @@ public class FlightsView extends VerticalLayout {
             }
         }
         if(!isActive) {
+            editedFlight.getGlider().isFlying = false;
             editedFlight.getPilot1().isFlying = false;
             pilotService.editPilot(flight.getPilot1());
+            gliderService.editGlider(flight.getGlider());
             if (flight.getPilot2() != null) {
-                editedFlight.getPilot2().isFlying = false;
+                flight.getPilot2().isFlying = false;
                 pilotService.editPilot(flight.getPilot2());
             }
         }
         if (isActive) {
             editedFlight.getPilot1().isFlying = true;
+            editedFlight.getGlider().isFlying = true;
             pilotService.editPilot(editedFlight.getPilot1());
+            gliderService.editGlider(flight.getGlider());
             if (editedFlight.getPilot2() != null) {
                 editedFlight.getPilot2().isFlying = true;
                 pilotService.editPilot(flight.getPilot2());
